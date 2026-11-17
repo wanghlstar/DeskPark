@@ -500,7 +500,9 @@ function RoundResult({
                 {lv(r.levelsBefore[t])}
                 {r.levelsAfter[t] !== r.levelsBefore[t] && <> → {lv(r.levelsAfter[t])}</>}
                 {r.reset && t === r.dealerTeam && <small>（丢庄，退回 5）</small>}
-                {r.preBefore?.[t] && r.preAfter && !r.preAfter[t] && <small>（打过 K）</small>}
+                {r.preBefore?.[t] && r.preAfter && !r.preAfter[t] && (
+                  <small>{r.levelsAfter[t] === 3 ? '（打 K 大光，直接打 3）' : '（打过 K）'}</small>
+                )}
               </b>
             </div>
           ))}
