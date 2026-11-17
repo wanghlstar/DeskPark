@@ -469,4 +469,3 @@ describe('双升对局流程', () => {
     expect(f.type === 'select' && f.choices[0].value).toBe(sh.FIVE_TEN_K);
   });
 });
-
