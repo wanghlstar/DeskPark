@@ -1,6 +1,7 @@
 import type { Card } from '@park/engine';
 import { useEffect, useRef, useState } from 'react';
 import { CardRow } from '../../components/Hand';
+import type { CardMark } from '../../components/Hand';
 import { playSound } from '../../lib/sound';
 import { vibrate } from '../../lib/platform';
 
@@ -21,10 +22,12 @@ export function MoveZone({
   isWild,
   passText = '不出',
   w,
+  markOf,
 }: {
   move: TrickMove;
   from: 'left' | 'right' | 'top' | 'bottom';
   isWild?: (c: Card) => boolean;
+  markOf?: (c: Card) => CardMark | undefined;
   passText?: string;
   w?: string;
 }) {
@@ -37,6 +40,7 @@ export function MoveZone({
       from={from}
       isWild={isWild}
       w={w}
+      markOf={markOf}
     />
   );
 }

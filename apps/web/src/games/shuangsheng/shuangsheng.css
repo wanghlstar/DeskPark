@@ -69,6 +69,78 @@
   left: 50%;
   translate: -50% 0;
 }
+.sj-big {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 0;
+  color: var(--felt-ink-2);
+  opacity: 0.55;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.sj-big__level {
+  font-size: clamp(22px, 3.2vw, 36px);
+  font-weight: 600;
+}
+.sj-big__level b {
+  font-size: clamp(44px, 7vw, 84px);
+  color: var(--felt-accent);
+  line-height: 1;
+  margin-left: 4px;
+}
+.sj-big__trump {
+  font-size: clamp(20px, 3vw, 34px);
+  font-weight: 650;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.sj-big__trump em {
+  font-style: normal;
+  opacity: 0.8;
+}
+.sj-big__suit {
+  font-size: clamp(36px, 5.5vw, 64px);
+  line-height: 1;
+}
+.sj-big__trump.is-red .sj-big__suit {
+  color: #ff6b5e;
+}
+.sj-big__trump small {
+  font-size: 0.5em;
+  opacity: 0.85;
+}
+.sj__zone {
+  z-index: 1;
+}
+.sj__zone.is-big .pcard {
+  box-shadow:
+    0 0 0 2px var(--gold, #e0b84a),
+    0 4px 14px rgba(224, 184, 74, 0.55);
+}
+.sj-bigtag {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  translate: -50% 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gold, #e0b84a);
+  color: #3a2a00;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  z-index: 3;
+  animation: rise-in 0.25s var(--ease-out);
+}
 .sj__me {
   grid-area: me;
   position: relative;

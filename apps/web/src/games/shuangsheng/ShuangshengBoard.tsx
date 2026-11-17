@@ -1,7 +1,9 @@
 import { Rng, SUIT_SYMBOL, sh } from '@park/engine';
+import type { Card } from '@park/engine';
 import { RotateCw } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { CardRow, Hand } from '../../components/Hand';
+import type { CardMark } from '../../components/Hand';
 import { Avatar, Seat } from '../../components/Seat';
 import { Button, Sheet, toast } from '../../components/ui';
 import type { GameController } from '../../lib/controller';
@@ -18,6 +20,47 @@ function trumpText(v: sh.SsView): string {
   if (!v.decl) return '未定';
   if (v.decl.suit === null) return v.decl.fallback ? '无主' : sh.STRENGTH_NAME[v.decl.strength];
   return `${SUIT_SYMBOL[v.decl.suit]} ${sh.STRENGTH_NAME[v.decl.strength]}`;
+}
+
+const LEVEL_MARK: CardMark = { text: '级', tone: 'level' };
+const TRUMP_MARK: CardMark = { text: '主', tone: 'trump' };
+
+/** 级牌标「级」，其余主牌（王、主花色）标「主」；反主后随新的主花色变化 */
+function markFor(v: sh.SsView): (c: Card) => CardMark | undefined {
+  const trump = v.decl ? v.decl.suit : null;
+  return (c) => {
+    if (c.suit === 'J') return TRUMP_MARK;
+    if (c.rank === v.level) return LEVEL_MARK;
+    if (trump !== null && c.suit === trump) return TRUMP_MARK;
+    return undefined;
+  };
+}
+
+const RED: Record<string, boolean> = { H: true, D: true };
+
+/** 桌面中间的大字：打几、什么主 */
+function CenterInfo({ v }: { v: sh.SsView }) {
+  const d = v.decl;
+  const suit = d?.suit ?? null;
+  return (
+    <div className="sj-big" aria-hidden>
+      <span className="sj-big__level">
+        打 <b>{lv(v.level)}</b>
+      </span>
+      <span className={`sj-big__trump ${suit && RED[suit] ? 'is-red' : ''}`}>
+        {!d ? (
+          <em>未定主</em>
+        ) : suit === null ? (
+          <b>无主</b>
+        ) : (
+          <>
+            <b className="sj-big__suit">{SUIT_SYMBOL[suit]}</b> 主
+          </>
+        )}
+        {d && <small>{sh.STRENGTH_NAME[d.strength]}</small>}
+      </span>
+    </div>
+  );
 }
 
 export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
@@ -73,6 +116,18 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
   };
 
   const fromBottom = useMemo(() => new Set(v.fromBottom), [v.fromBottom]);
+  const markOf = useMemo(
+    () => markFor(v),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [v.level, v.decl?.suit, v.decl === null],
+  );
+  // 本墩目前最大的一家（实时）
+  const bigSeat = v.trick && v.trick.plays.length ? (v.trick.winner ?? v.winning) : null;
+  const zoneCls = (s: number) => (bigSeat === s ? 'is-big' : '');
+  const bigTag = (s: number) =>
+    bigSeat === s ? (
+      <span className="sj-bigtag">{v.trick?.winner != null ? '最大' : '目前最大'}</span>
+    ) : null;
 
   const trickMove = (s: number) => {
     const p = v.trick?.plays.find((x) => x.seat === s);
@@ -152,17 +207,22 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
 
       <div className="sj__center">
         <div className="sj__top">{seatEl(top, 'top')}</div>
-        <div className="sj__zone is-top">
-          <MoveZone move={trickMove(top)} from="top" />
+        {!over && <CenterInfo v={v} />}
+        <div className={`sj__zone is-top ${zoneCls(top)}`}>
+          <MoveZone move={trickMove(top)} from="top" markOf={markOf} />
+          {bigTag(top)}
         </div>
-        <div className="sj__zone is-left">
-          <MoveZone move={trickMove(left)} from="left" />
+        <div className={`sj__zone is-left ${zoneCls(left)}`}>
+          <MoveZone move={trickMove(left)} from="left" markOf={markOf} />
+          {bigTag(left)}
         </div>
-        <div className="sj__zone is-right">
-          <MoveZone move={trickMove(right)} from="right" />
+        <div className={`sj__zone is-right ${zoneCls(right)}`}>
+          <MoveZone move={trickMove(right)} from="right" markOf={markOf} />
+          {bigTag(right)}
         </div>
-        <div className="sj__zone is-me">
-          <MoveZone move={trickMove(me)} from="bottom" />
+        <div className={`sj__zone is-me ${zoneCls(me)}`}>
+          <MoveZone move={trickMove(me)} from="bottom" markOf={markOf} />
+          {bigTag(me)}
         </div>
         {showDeclBox && <DeclBox v={v} players={players} />}
         {playing && v.throwFail && (
@@ -253,6 +313,7 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
             selected={sel}
             onChange={myTurn || myBury ? setSel : playing ? setSel : undefined}
             highlight={fromBottom}
+            markOf={markOf}
             dealKey={v.round}
           />
         )}
