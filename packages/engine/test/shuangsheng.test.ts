@@ -436,7 +436,11 @@ describe('双升对局流程', () => {
           if (pa[t]) expect(PRE).toContain(a);
           if (!pb[t]) expect(pa[t]).toBe(false);
           if (t === upTeam && r.up > 0) {
-            if (pb[t] && b === 13) {
+            if (pb[t] && b === 13 && r.side === 'defender') {
+              // K 不能跳过：闲家在 K 上台升级仍停在 K
+              expect(a).toBe(13);
+              expect(pa[t]).toBe(true);
+            } else if (pb[t] && b === 13) {
               expect(a).toBe(2);
               expect(pa[t]).toBe(false);
               passedK++;
