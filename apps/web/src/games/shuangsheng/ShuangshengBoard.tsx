@@ -139,9 +139,11 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
         </span>
         <span className={`chip ${v.dealerTeam === myTeam ? 'is-gold' : ''}`}>
           {spectator ? '南北' : '我方'} <b>{lv(v.levels[myTeam])}</b>
+          {v.pre?.[myTeam] && <small> 510K</small>}
         </span>
         <span className={`chip ${v.dealerTeam !== myTeam ? 'is-gold' : ''}`}>
           {spectator ? '东西' : '对方'} <b>{lv(v.levels[1 - myTeam])}</b>
+          {v.pre?.[1 - myTeam] && <small> 510K</small>}
         </span>
       </div>
 
@@ -423,6 +425,8 @@ function RoundResult({
               <b>
                 {lv(r.levelsBefore[t])}
                 {r.levelsAfter[t] !== r.levelsBefore[t] && <> → {lv(r.levelsAfter[t])}</>}
+                {r.reset && t === r.dealerTeam && <small>（丢庄，退回 5）</small>}
+                {r.preBefore?.[t] && r.preAfter && !r.preAfter[t] && <small>（打过 K）</small>}
               </b>
             </div>
           ))}
