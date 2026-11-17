@@ -19,6 +19,10 @@ export interface PlayingCardProps extends HTMLAttributes<HTMLDivElement> {
   highlight?: boolean;
   /** 掼蛋万能牌标记 */
   wild?: boolean;
+  /** 左下角小标记（例如双升的「级」「主」） */
+  mark?: string;
+  /** 标记样式（is-<markTone>） */
+  markTone?: string;
 }
 
 export const PlayingCard = memo(function PlayingCard({
@@ -29,6 +33,8 @@ export const PlayingCard = memo(function PlayingCard({
   dim,
   highlight,
   wild,
+  mark,
+  markTone,
   className = '',
   style,
   ...rest
@@ -39,6 +45,7 @@ export const PlayingCard = memo(function PlayingCard({
     selected ? 'is-selected' : '',
     dim ? 'is-dim' : '',
     highlight ? 'is-highlight' : '',
+    mark ? `has-mark mark-${markTone ?? 'default'}` : '',
     className,
   ]
     .filter(Boolean)
@@ -61,6 +68,7 @@ export const PlayingCard = memo(function PlayingCard({
       <div className={`${cls} pcard--joker ${big ? 'is-big' : ''}`} style={s} {...rest}>
         <div className="pcard__jindex">{big ? '大王' : '小王'}</div>
         <JesterIcon className="pcard__jcenter" />
+        {mark && <span className={`pcard__mark is-${markTone ?? 'default'}`}>{mark}</span>}
       </div>
     );
   }
@@ -80,6 +88,7 @@ export const PlayingCard = memo(function PlayingCard({
         <SuitIcon suit={card.suit} className={`pcard__pip ${card.rank === 14 ? 'is-ace' : ''}`} />
       )}
       {wild && <span className="pcard__wild">配</span>}
+      {mark && <span className={`pcard__mark is-${markTone ?? 'default'}`}>{mark}</span>}
     </div>
   );
 });

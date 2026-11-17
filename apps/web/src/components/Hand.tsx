@@ -20,6 +20,13 @@ export interface HandProps {
   dealKey?: string | number;
   /** 需要高亮的牌（例如刚拿到的底牌） */
   highlight?: Set<number>;
+  /** 每张牌的小标记（例如双升的「级」「主」） */
+  markOf?: (c: Card) => CardMark | undefined;
+}
+
+export interface CardMark {
+  text: string;
+  tone?: string;
 }
 
 /** 测量容器宽度 */
@@ -64,6 +71,7 @@ export function Hand({
   single,
   dealKey,
   highlight,
+  markOf,
 }: HandProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const cw = useCardWidth(ref.current, width);
@@ -191,6 +199,8 @@ export function Hand({
             selected={sel}
             wild={isWild?.(c)}
             highlight={highlight?.has(c.id)}
+            mark={markOf?.(c)?.text}
+            markTone={markOf?.(c)?.tone}
             style={style}
           />
         );
@@ -206,6 +216,7 @@ export function CardRow({
   overlap = 0.42,
   isWild,
   highlight,
+  markOf,
   from,
   className = '',
 }: {
@@ -213,6 +224,7 @@ export function CardRow({
   w?: string;
   overlap?: number;
   isWild?: (c: Card) => boolean;
+  markOf?: (c: Card) => CardMark | undefined;
   highlight?: Set<number>;
   /** 入场动画方向 */
   from?: 'left' | 'right' | 'top' | 'bottom';
@@ -230,6 +242,8 @@ export function CardRow({
           w={w}
           wild={isWild?.(c)}
           highlight={highlight?.has(c.id)}
+          mark={markOf?.(c)?.text}
+          markTone={markOf?.(c)?.tone}
           style={{ animationDelay: `${i * 25}ms` }}
         />
       ))}
