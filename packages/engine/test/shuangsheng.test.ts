@@ -414,4 +414,59 @@ describe('双升对局流程', () => {
     }
     expect(checked).toBeGreaterThan(0);
   });
+
+  it('从 5·10·K 打起：5 → 10 → K 封顶，打过 K 回 2，丢庄退回 5', { timeout: 120000 }, () => {
+    const PRE = sh.PRE_LEVELS as readonly number[];
+    let resets = 0;
+    let passedK = 0;
+    let jumps = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const { state } = simulate(shuangsheng, 4, { startLevel: sh.FIVE_TEN_K }, seed, 600000);
+      expect(state.options.startLevel).toBe(sh.FIVE_TEN_K);
+      expect(state.phase).toBe('matchOver');
+      expect(state.history[0].levelsBefore).toEqual([5, 5]);
+      for (const r of state.history) {
+        const pb = r.preBefore!;
+        const pa = r.preAfter!;
+        const upTeam = r.side === 'dealer' ? r.dealerTeam : 1 - r.dealerTeam;
+        for (const t of [0, 1] as const) {
+          const b = r.levelsBefore[t];
+          const a = r.levelsAfter[t];
+          if (pb[t]) expect(PRE).toContain(b);
+          if (pa[t]) expect(PRE).toContain(a);
+          if (!pb[t]) expect(pa[t]).toBe(false);
+          if (t === upTeam && r.up > 0) {
+            if (pb[t] && b === 13) {
+              expect(a).toBe(2);
+              expect(pa[t]).toBe(false);
+              passedK++;
+            } else if (pb[t]) {
+              const want = PRE[Math.min(2, PRE.indexOf(b) + r.up)];
+              expect(a).toBe(want);
+              if (r.up > 1) jumps++;
+            } else {
+              expect(a).toBe(Math.min(14, b + r.up));
+            }
+          } else if (t === r.dealerTeam && r.side === 'defender' && pb[t]) {
+            expect(a).toBe(5);
+            expect(r.reset).toBe(b !== 5);
+            if (r.reset) resets++;
+          } else {
+            expect(a).toBe(b);
+          }
+        }
+      }
+      const last = state.history[state.history.length - 1];
+      expect(last.level).toBe(14);
+    }
+    expect(resets).toBeGreaterThan(0);
+    expect(passedK).toBeGreaterThan(0);
+    expect(jumps).toBeGreaterThan(0);
+  });
+
+  it('5·10·K 是起始级牌的第一个选项', () => {
+    const f = shuangsheng.optionFields[0];
+    expect(f.type === 'select' && f.choices[0].value).toBe(sh.FIVE_TEN_K);
+  });
 });
+

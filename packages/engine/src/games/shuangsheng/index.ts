@@ -18,9 +18,14 @@ export * from './play';
 export { buildFollow, ssBot } from './bot';
 
 export interface SsOptions {
-  /** 起始级牌（规则为从 2 打起） */
+  /** 起始级牌（规则为从 2 打起）；FIVE_TEN_K 表示「从 5·10·K 打起」 */
   startLevel: number;
 }
+
+/** 起始级牌选项「从 5·10·K 打起」的取值 */
+export const FIVE_TEN_K = 510;
+/** 5·10·K 段依次要打的级 */
+export const PRE_LEVELS = [5, 10, 13] as const;
 
 export type SsAction =
   // 系统动作（SYSTEM_SEAT）
@@ -68,6 +73,11 @@ export interface SsRoundResult {
   up: number;
   levelsBefore: [number, number];
   levelsAfter: [number, number];
+  /** 5·10·K 模式：本局前后两队是否还在 5·10·K 段 */
+  preBefore?: [boolean, boolean];
+  preAfter?: [boolean, boolean];
+  /** 5·10·K 模式：庄方丢庄（中断），级数退回 5 */
+  reset?: boolean;
   matchWon: boolean;
 }
 
@@ -77,6 +87,8 @@ export interface SsState {
   round: number;
   phase: SsPhase;
   levels: [number, number];
+  /** 5·10·K 模式下，两队是否还在 5·10·K 段（普通模式恒为 false） */
+  pre: [boolean, boolean];
   /** 本局打的级 */
   level: number;
   /** 庄方 */
@@ -116,6 +128,7 @@ export interface SsView {
   round: number;
   options: SsOptions;
   levels: [number, number];
+  pre: [boolean, boolean];
   level: number;
   dealerTeam: 0 | 1;
   dealer: Seat | null;
@@ -297,6 +310,25 @@ function setDealer(state: SsState, seat: Seat): void {
   startBury(state, seat);
 }
 
+/**
+ * 升级。5·10·K 段按 5 → 10 → K 逐步走，可以跳级但最高到 K；
+ * 打过 K 后统一从 2 开始，之后按普通规则升级（最多到 A）。
+ */
+function advanceLevel(state: SsState, team: 0 | 1, up: number): void {
+  if (up <= 0) return;
+  if (!state.pre[team]) {
+    state.levels[team] = Math.min(14, state.levels[team] + up);
+    return;
+  }
+  const idx = PRE_LEVELS.indexOf(state.levels[team] as (typeof PRE_LEVELS)[number]);
+  if (idx === PRE_LEVELS.length - 1) {
+    state.levels[team] = 2;
+    state.pre[team] = false;
+  } else {
+    state.levels[team] = PRE_LEVELS[Math.min(PRE_LEVELS.length - 1, Math.max(0, idx) + up)];
+  }
+}
+
 function finishRound(state: SsState, last: SsTrick): void {
   const ctx = ctxOf(state);
   const dealerTeam = state.dealerTeam;
@@ -309,9 +341,13 @@ function finishRound(state: SsState, last: SsTrick): void {
   }
   const { side, up } = upgradeFor(state.points);
   const before: [number, number] = [...state.levels];
+  const preBefore: [boolean, boolean] = [...state.pre];
   const matchWon = side === 'dealer' && state.level === 14;
   const upTeam = side === 'dealer' ? dealerTeam : ((1 - dealerTeam) as 0 | 1);
-  if (!matchWon) state.levels[upTeam] = Math.min(14, state.levels[upTeam] + up);
+  if (!matchWon) advanceLevel(state, upTeam, up);
+  // 5·10·K 段必须连续坐庄打过：庄方丢庄即中断，退回 5 重新打
+  const reset = side === 'defender' && state.pre[dealerTeam] && state.levels[dealerTeam] !== 5;
+  if (side === 'defender' && state.pre[dealerTeam]) state.levels[dealerTeam] = 5;
   const dealer = state.dealer!;
   const result: SsRoundResult = {
     round: state.round,
@@ -327,6 +363,9 @@ function finishRound(state: SsState, last: SsTrick): void {
     up: matchWon ? 0 : up,
     levelsBefore: before,
     levelsAfter: [...state.levels],
+    ...(state.options.startLevel === FIVE_TEN_K
+      ? { preBefore, preAfter: [...state.pre] as [boolean, boolean], reset }
+      : {}),
     matchWon,
   };
   state.result = result;
@@ -351,6 +390,7 @@ function copyState(s: SsState): SsState {
   return {
     ...s,
     levels: [...s.levels],
+    pre: [...s.pre],
     order: [...s.order],
     hands: s.hands.map((h) => [...h]),
     deck: [...s.deck],
@@ -390,6 +430,7 @@ export const shuangsheng: GameDefinition<SsState, SsAction, SsView, SsOptions> =
       '跟牌：有该门必须跟该门，按领出的牌型尽量跟拖拉机、对子，不够用同门补，再不够垫其他牌。没有该门可以用主牌毙，牌型完全一致才算毙上；多家毙牌比最大的一组。庄家先出，每墩最大者下一墩先出。',
       '抠底：最后一墩闲家赢，底牌分翻倍计入闲家：单张 ×2、对子 ×4、n 连对 ×2^(n+1)，甩牌按其中最大的牌型。庄方赢最后一墩则底分不计。',
       '升级：闲家 0 分庄方升 3 级；5–35 分升 2 级；40–75 分升 1 级；80–115 分闲家上台不升级；120–155 分闲家上台并升 1 级，之后每多 40 分再升 1 级。升级最多到 A，A 必须实打；庄方打 A 守住（闲家不到 80 分）即赢得整场。',
+      '从 5·10·K 打起（可选）：先打 5，再打 10，再打 K，可以跳级但最高到 K；打过 K 后从 2 开始，之后正常升级。5、10、K 这一段必须连续打过：庄方丢庄（闲家上台）就退回 5 重新打；闲家拿 120 分以上上台并升级，算连续。',
     ],
   },
   defaultOptions: { startLevel: 2 },
@@ -397,9 +438,10 @@ export const shuangsheng: GameDefinition<SsState, SsAction, SsView, SsOptions> =
     {
       key: 'startLevel',
       label: '起始级牌',
-      hint: '规则从 2 打起；从更高的级数开始，对局更快结束',
+      hint: '5·10·K：先连续坐庄打过 5、10、K（丢庄退回 5），再从 2 打到 A；也可从 2、8、Q 直接打起',
       type: 'select',
       choices: [
+        { value: FIVE_TEN_K, label: '从 5·10·K 打起' },
         { value: 2, label: '从 2 打起' },
         { value: 8, label: '从 8 打起' },
         { value: 12, label: '从 Q 打起' },
@@ -409,9 +451,11 @@ export const shuangsheng: GameDefinition<SsState, SsAction, SsView, SsOptions> =
 
   setup({ options, seed }) {
     const raw = Number(options?.startLevel);
-    const start = Number.isInteger(raw) ? Math.min(14, Math.max(2, raw)) : 2;
+    const ftk = raw === FIVE_TEN_K;
+    const start = ftk ? 5 : Number.isInteger(raw) ? Math.min(14, Math.max(2, raw)) : 2;
     const state: SsState = {
-      options: { startLevel: start },
+      options: { startLevel: ftk ? FIVE_TEN_K : start },
+      pre: [ftk, ftk],
       rng: seed >>> 0,
       round: 1,
       phase: 'deal',
@@ -680,6 +724,7 @@ export const shuangsheng: GameDefinition<SsState, SsAction, SsView, SsOptions> =
       round: state.round,
       options: state.options,
       levels: state.levels,
+      pre: state.pre,
       level: state.level,
       dealerTeam: state.dealerTeam,
       dealer: state.dealer,
