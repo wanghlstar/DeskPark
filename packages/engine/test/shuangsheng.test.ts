@@ -468,4 +468,21 @@ describe('双升对局流程', () => {
     const f = shuangsheng.optionFields[0];
     expect(f.type === 'select' && f.choices[0].value).toBe(sh.FIVE_TEN_K);
   });
+
+  it('5·10·K：该坐庄的一方亮不起被对方坐庄，也退回 5', { timeout: 120000 }, () => {
+    let hit = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const { state } = simulate(shuangsheng, 4, { startLevel: sh.FIVE_TEN_K }, seed, 600000);
+      const h = state.history;
+      for (let i = 1; i < h.length; i++) {
+        const prev = h[i - 1];
+        const orderTeam = prev.side === 'dealer' ? prev.dealerTeam : 1 - prev.dealerTeam;
+        if (h[i].dealerTeam !== orderTeam && prev.preAfter![orderTeam]) {
+          expect(h[i].levelsBefore[orderTeam]).toBe(5);
+          if (prev.levelsAfter[orderTeam] !== 5) hit++;
+        }
+      }
+    }
+    expect(hit).toBeGreaterThan(0);
+  });
 });
