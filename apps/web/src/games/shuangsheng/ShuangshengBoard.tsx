@@ -63,6 +63,18 @@ function CenterInfo({ v }: { v: sh.SsView }) {
   );
 }
 
+/** 闲家得分：放大显示在桌面右上方，分数变化时闪一下 */
+function ScoreBig({ points }: { points: number }) {
+  return (
+    <div className={`sj-score-big ${points >= 80 ? 'is-hot' : ''}`}>
+      <span>闲家得分</span>
+      <b key={points} className="num">
+        {points}
+      </b>
+    </div>
+  );
+}
+
 export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
   const v = ctl.view!;
   const players = ctl.players;
@@ -208,6 +220,7 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
       <div className="sj__center">
         <div className="sj__top">{seatEl(top, 'top')}</div>
         {!over && <CenterInfo v={v} />}
+        {!over && v.trumpKnown && <ScoreBig points={v.points} />}
         <div className={`sj__zone is-top ${zoneCls(top)}`}>
           <MoveZone move={trickMove(top)} from="top" markOf={markOf} />
           {bigTag(top)}

@@ -126,6 +126,40 @@
     0 0 0 2px var(--gold, #e0b84a),
     0 4px 14px rgba(224, 184, 74, 0.55);
 }
+.sj-score-big {
+  position: absolute;
+  top: 6px;
+  right: 6%;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 14px;
+  background: var(--felt-glass);
+  box-shadow: inset 0 0 0 1px var(--felt-line);
+  color: var(--felt-ink-2);
+  font-size: clamp(14px, 1.6vw, 18px);
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 2;
+}
+.sj-score-big b {
+  font-size: clamp(34px, 5vw, 60px);
+  line-height: 1;
+  color: var(--felt-accent);
+  animation: sj-pop 0.5s var(--ease-out);
+}
+.sj-score-big.is-hot b {
+  color: #ff6b5e;
+}
+@keyframes sj-pop {
+  0% {
+    scale: 1.6;
+  }
+  100% {
+    scale: 1;
+  }
+}
 .sj-bigtag {
   position: absolute;
   left: 50%;
