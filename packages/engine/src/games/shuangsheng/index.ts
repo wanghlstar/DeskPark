@@ -26,6 +26,8 @@ export interface SsOptions {
 export const FIVE_TEN_K = 510;
 /** 5·10·K 段依次要打的级 */
 export const PRE_LEVELS = [5, 10, 13] as const;
+/** 5·10·K 模式打过 K 之后的级牌顺序：5、10、K 已经打过，直接跳过 */
+export const POST_LEVELS = [2, 3, 4, 6, 7, 8, 9, 11, 12, 14] as const;
 
 export type SsAction =
   // 系统动作（SYSTEM_SEAT）
@@ -317,19 +319,26 @@ function setDealer(state: SsState, seat: Seat): void {
 
 /**
  * 升级。5·10·K 段按 5 → 10 → K 逐步走，可以跳级但最高到 K，K 必须坐庄实打；
- * 打过 K 后统一从 2 开始，之后按普通规则升级（最多到 A）。
+ * 打过 K 后从 2 开始（坐庄打 K 时闲家一分未得，连升两级直接打 3），之后再遇到 5、10、K 直接跳过（最多到 A）。
  */
-function advanceLevel(state: SsState, team: 0 | 1, up: number, asDealer: boolean): void {
+export function advanceLevel(state: SsState, team: 0 | 1, up: number, asDealer: boolean): void {
   if (up <= 0) return;
   if (!state.pre[team]) {
-    state.levels[team] = Math.min(14, state.levels[team] + up);
+    if (state.options.startLevel === FIVE_TEN_K) {
+      // 打过 5·10·K 后再遇到 5、10、K 直接跳过，按 2 3 4 6 7 8 9 J Q A 的顺序升
+      const i = POST_LEVELS.indexOf(state.levels[team] as (typeof POST_LEVELS)[number]);
+      state.levels[team] = POST_LEVELS[Math.min(POST_LEVELS.length - 1, Math.max(0, i) + up)];
+    } else {
+      state.levels[team] = Math.min(14, state.levels[team] + up);
+    }
     return;
   }
   const idx = PRE_LEVELS.indexOf(state.levels[team] as (typeof PRE_LEVELS)[number]);
   if (idx === PRE_LEVELS.length - 1) {
     // K 不能跳过：必须自己坐庄把 K 打过；闲家在 K 上台升级仍停在 K
     if (!asDealer) return;
-    state.levels[team] = 2;
+    // 打 K 闲家一分没拿（大光），庄方连升两级，直接打 3
+    state.levels[team] = up >= 3 ? 3 : 2;
     state.pre[team] = false;
   } else {
     state.levels[team] = PRE_LEVELS[Math.min(PRE_LEVELS.length - 1, Math.max(0, idx) + up)];

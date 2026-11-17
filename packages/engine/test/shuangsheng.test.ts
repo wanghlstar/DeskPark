@@ -420,6 +420,7 @@ describe('双升对局流程', () => {
     let resets = 0;
     let passedK = 0;
     let jumps = 0;
+    let sweptK = 0;
     for (let seed = 1; seed <= 30; seed++) {
       const { state } = simulate(shuangsheng, 4, { startLevel: sh.FIVE_TEN_K }, seed, 600000);
       expect(state.options.startLevel).toBe(sh.FIVE_TEN_K);
@@ -441,7 +442,9 @@ describe('双升对局流程', () => {
               expect(a).toBe(13);
               expect(pa[t]).toBe(true);
             } else if (pb[t] && b === 13) {
-              expect(a).toBe(2);
+              // 打过 K 回 2；闲家一分未得则连升两级直接打 3
+              expect(a).toBe(r.defenderPoints <= 0 ? 3 : 2);
+              if (r.defenderPoints <= 0) sweptK++;
               expect(pa[t]).toBe(false);
               passedK++;
             } else if (pb[t]) {
@@ -449,7 +452,9 @@ describe('双升对局流程', () => {
               expect(a).toBe(want);
               if (r.up > 1) jumps++;
             } else {
-              expect(a).toBe(Math.min(14, b + r.up));
+              // 打过 K 后 5、10、K 不再打
+              const POST = sh.POST_LEVELS as readonly number[];
+              expect(a).toBe(POST[Math.min(POST.length - 1, POST.indexOf(b) + r.up)]);
             }
           } else if (t === r.dealerTeam && r.side === 'defender' && pb[t]) {
             expect(a).toBe(5);
@@ -466,6 +471,30 @@ describe('双升对局流程', () => {
     expect(resets).toBeGreaterThan(0);
     expect(passedK).toBeGreaterThan(0);
     expect(jumps).toBeGreaterThan(0);
+    expect(sweptK).toBeGreaterThanOrEqual(0);
+  });
+
+  it('5·10·K：打 K 大光直接打 3，打过 K 后跳过 5、10、K', () => {
+    const st = shuangsheng.setup({ players: [], options: { startLevel: sh.FIVE_TEN_K }, seed: 1 });
+    st.levels = [13, 13];
+    st.pre = [true, true];
+    sh.advanceLevel(st, 0, 3, true);
+    expect(st.levels[0]).toBe(3);
+    expect(st.pre[0]).toBe(false);
+    sh.advanceLevel(st, 1, 2, true);
+    expect(st.levels[1]).toBe(2);
+    sh.advanceLevel(st, 1, 3, false);
+    expect(st.levels[1]).toBe(6);
+    sh.advanceLevel(st, 1, 2, true);
+    expect(st.levels[1]).toBe(8);
+    sh.advanceLevel(st, 1, 2, true);
+    expect(st.levels[1]).toBe(11);
+    sh.advanceLevel(st, 1, 2, true);
+    expect(st.levels[1]).toBe(14);
+    sh.advanceLevel(st, 0, 1, true);
+    expect(st.levels[0]).toBe(4);
+    sh.advanceLevel(st, 0, 1, true);
+    expect(st.levels[0]).toBe(6);
   });
 
   it('5·10·K 是起始级牌的第一个选项', () => {
