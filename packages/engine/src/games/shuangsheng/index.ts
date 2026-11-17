@@ -316,10 +316,10 @@ function setDealer(state: SsState, seat: Seat): void {
 }
 
 /**
- * 升级。5·10·K 段按 5 → 10 → K 逐步走，可以跳级但最高到 K；
+ * 升级。5·10·K 段按 5 → 10 → K 逐步走，可以跳级但最高到 K，K 必须坐庄实打；
  * 打过 K 后统一从 2 开始，之后按普通规则升级（最多到 A）。
  */
-function advanceLevel(state: SsState, team: 0 | 1, up: number): void {
+function advanceLevel(state: SsState, team: 0 | 1, up: number, asDealer: boolean): void {
   if (up <= 0) return;
   if (!state.pre[team]) {
     state.levels[team] = Math.min(14, state.levels[team] + up);
@@ -327,6 +327,8 @@ function advanceLevel(state: SsState, team: 0 | 1, up: number): void {
   }
   const idx = PRE_LEVELS.indexOf(state.levels[team] as (typeof PRE_LEVELS)[number]);
   if (idx === PRE_LEVELS.length - 1) {
+    // K 不能跳过：必须自己坐庄把 K 打过；闲家在 K 上台升级仍停在 K
+    if (!asDealer) return;
     state.levels[team] = 2;
     state.pre[team] = false;
   } else {
@@ -349,7 +351,7 @@ function finishRound(state: SsState, last: SsTrick): void {
   const preBefore: [boolean, boolean] = [...state.pre];
   const matchWon = side === 'dealer' && state.level === 14;
   const upTeam = side === 'dealer' ? dealerTeam : ((1 - dealerTeam) as 0 | 1);
-  if (!matchWon) advanceLevel(state, upTeam, up);
+  if (!matchWon) advanceLevel(state, upTeam, up, side === 'dealer');
   // 5·10·K 段必须连续坐庄打过：庄方丢庄即中断，退回 5 重新打
   const reset = side === 'defender' && state.pre[dealerTeam] && state.levels[dealerTeam] !== 5;
   if (side === 'defender' && state.pre[dealerTeam]) state.levels[dealerTeam] = 5;
@@ -435,7 +437,7 @@ export const shuangsheng: GameDefinition<SsState, SsAction, SsView, SsOptions> =
       '跟牌：有该门必须跟该门，按领出的牌型尽量跟拖拉机、对子，不够用同门补，再不够垫其他牌。没有该门可以用主牌毙，牌型完全一致才算毙上；多家毙牌比最大的一组。庄家先出，每墩最大者下一墩先出。',
       '抠底：最后一墩闲家赢，底牌分翻倍计入闲家：单张 ×2、对子 ×4、n 连对 ×2^(n+1)，甩牌按其中最大的牌型。庄方赢最后一墩则底分不计。',
       '升级：闲家 0 分庄方升 3 级；5–35 分升 2 级；40–75 分升 1 级；80–115 分闲家上台不升级；120–155 分闲家上台并升 1 级，之后每多 40 分再升 1 级。升级最多到 A，A 必须实打；庄方打 A 守住（闲家不到 80 分）即赢得整场。',
-      '从 5·10·K 打起（可选）：先打 5，再打 10，再打 K，可以跳级但最高到 K；打过 K 后从 2 开始，之后正常升级。5、10、K 这一段必须连续打过：庄方丢庄（闲家上台，或该坐庄时亮不起主、被对方亮主坐庄）就退回 5 重新打；闲家拿 120 分以上上台并升级，算连续。',
+      '从 5·10·K 打起（可选）：先打 5，再打 10，再打 K，可以跳级但最高到 K，K 必须坐庄实打（闲家在 K 上台升级仍停在 K）；打过 K 后从 2 开始，之后正常升级。5、10、K 这一段必须连续打过：庄方丢庄（闲家上台，或该坐庄时亮不起主、被对方亮主坐庄）就退回 5 重新打；闲家拿 120 分以上上台并升级，算连续。',
     ],
   },
   defaultOptions: { startLevel: 2 },
