@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 修复
+
+- 旧版 Android WebView（如 83）打开 App 白屏：网页构建目标降到 Chrome 80 / Safari 14，并按需注入 core-js 补丁（`Array.prototype.at` 等），导师 Worker 单独补 `.at`。个别新式样式（如 `color-mix` 悬停色）在旧 WebView 上会退化，不影响使用。
+
 ### 新增
 
 - 麻将导师 v2：出牌、碰、杠、胡还是过、定缺、换三张，统一按「本盘期望得分（分）」比较，在速度、牌型大小、放炮风险之间做权衡。

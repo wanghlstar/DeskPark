@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/coverage/**',
       'apps/web/public/engines/**',
       'apps/web/android/**',
+      'mobile/android/**',
       // 自动生成的量化模型数据，避免解析超长权重表达式时栈溢出
       'packages/engine/src/games/sichuan/coach/oppnet-weights.ts',
     ],

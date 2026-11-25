@@ -20,7 +20,7 @@ import { SettingsSheet } from './SettingsSheet';
 import { SetupSheet } from './SetupSheet';
 import './home.css';
 
-const REPO_URL = 'https://github.com/solitern/DeskPark';
+const REPO_URL = 'https://github.com/wanghlstar/DeskPark';
 
 const CATEGORIES: { id: GameCategory; title: string; note?: string }[] = [
   { id: 'poker', title: '扑克' },

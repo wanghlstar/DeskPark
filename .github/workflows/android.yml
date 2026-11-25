@@ -8,10 +8,8 @@ on:
     inputs:
       server_url:
         description: 联机服务器 WebSocket 地址
-        default: wss://deskpark.yeyhome.com:8666/ws
       public_url:
-        description: 线上网页地址（邀请链接用）
-        default: https://deskpark.yeyhome.com:8666/
+        description: 线上网页地址（在线版本与邀请链接用）
 
 concurrency:
   group: android-${{ github.ref }}
@@ -22,8 +20,8 @@ permissions:
 
 env:
   # 可在仓库 Settings → Variables 里设置 ANDROID_SERVER_URL / ANDROID_PUBLIC_URL 覆盖
-  SERVER_URL: ${{ inputs.server_url || vars.ANDROID_SERVER_URL || 'wss://deskpark.yeyhome.com:8666/ws' }}
-  PUBLIC_URL: ${{ inputs.public_url || vars.ANDROID_PUBLIC_URL || 'https://deskpark.yeyhome.com:8666/' }}
+  SERVER_URL: ${{ inputs.server_url || vars.ANDROID_SERVER_URL }}
+  PUBLIC_URL: ${{ inputs.public_url || vars.ANDROID_PUBLIC_URL }}
 
 jobs:
   apk:
@@ -55,6 +53,14 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq librsvg2-bin imagemagick
           ./make-assets.sh
           npm install --no-audit --no-fund
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const config = JSON.parse(fs.readFileSync('capacitor.config.json', 'utf8'));
+          if (process.env.PUBLIC_URL) {
+            config.server.allowNavigation = [new URL(process.env.PUBLIC_URL).hostname];
+          }
+          fs.writeFileSync('capacitor.config.json', JSON.stringify(config, null, 2) + '\n');
+          NODE
           npx cap add android
           npx capacitor-assets generate --android \
             --iconBackgroundColor '#1f5c4f' --splashBackgroundColor '#f4f1ea' \
@@ -65,6 +71,19 @@ jobs:
         working-directory: mobile/android
         run: |
           chmod +x gradlew
+          # Gradle 发行版托管在 GitHub Releases，偶尔 504：改用 -bin 包、放宽超时，
+          # 官方地址失败时依次换腾讯云、阿里云镜像
+          P=gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/-all\.zip/-bin.zip/; s/^networkTimeout=.*/networkTimeout=120000/; s/^validateDistributionUrl=.*/validateDistributionUrl=false/' "$P"
+          V=$(sed -n 's/.*gradle-\([0-9.]*\)-bin\.zip/\1/p' "$P")
+          for U in \
+            "https\\://services.gradle.org/distributions/gradle-$V-bin.zip" \
+            "https\\://mirrors.cloud.tencent.com/gradle/gradle-$V-bin.zip" \
+            "https\\://mirrors.aliyun.com/gradle/distributions/v$V/gradle-$V-bin.zip"; do
+            sed -i "s#^distributionUrl=.*#distributionUrl=$U#" "$P"
+            ./gradlew --version > /dev/null && break
+            echo "Gradle 下载失败：$U"
+          done
           ./gradlew assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/deskpark-debug.apk"
 

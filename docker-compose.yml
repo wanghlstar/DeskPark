@@ -10,7 +10,7 @@ name: deskpark
 
 services:
   deskpark:
-    image: ${DESKPARK_IMAGE:-ghcr.io/solitern/deskpark:latest}
+    image: ${DESKPARK_IMAGE:-ghcr.io/wanghlstar/deskpark:latest}
     build:
       context: .
       args:
