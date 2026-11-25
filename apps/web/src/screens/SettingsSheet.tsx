@@ -243,7 +243,7 @@ function AiSection() {
       <div className="ai-row">
         <span>
           经服务器转发
-          <small>浏览器直连被跨域拦截时开启（需要部署了闲亭服务器）</small>
+          <small>由部署端连接 AI；内网接口需先在飞牛应用设置或服务器配置中允许该地址</small>
         </span>
         <Switch checked={a.proxy} onChange={(proxy) => aiSettings.set({ proxy })} />
       </div>

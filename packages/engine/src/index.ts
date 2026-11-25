@@ -12,7 +12,7 @@ import { doudizhu } from './games/doudizhu';
 import { gemguild } from './games/gemguild';
 import { guandan } from './games/guandan';
 import { hexisle } from './games/hexisle';
-import { heluogangci } from './games/heluo';
+import { heluogangci, pinghu } from './games/heluo';
 import { highcard } from './games/highcard';
 import { onecard } from './games/onecard';
 import { shuangsheng } from './games/shuangsheng';
@@ -44,6 +44,7 @@ export {
   shuangsheng,
   texas,
   sichuan,
+  pinghu,
   heluogangci,
   xiangqi,
   chess,
@@ -62,6 +63,7 @@ for (const g of [
   shuangsheng,
   texas,
   sichuan,
+  pinghu,
   heluogangci,
   xiangqi,
   chess,

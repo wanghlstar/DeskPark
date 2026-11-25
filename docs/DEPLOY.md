@@ -109,18 +109,19 @@ docker compose -f docker-compose.yml -f deploy/docker-compose.https.yml up -d
 
 ## 六、配置项
 
-| 变量              | 默认值                               | 说明                                                            |
-| ----------------- | ------------------------------------ | --------------------------------------------------------------- |
-| `HTTP_PORT`       | `8787`                               | 对外端口                                                        |
-| `HTTP_BIND`       | `0.0.0.0`                            | 监听地址；配合 HTTPS 时设为 `127.0.0.1`                         |
-| `TURN_TIMEOUT_MS` | `30000`                              | 联机时每一步的时限，超时由电脑代打                              |
-| `AI_PROXY`        | 开启                                 | 设为 `off` 关闭 AI 接口转发（见下方「AI 人机」）                |
-| `TRUST_PROXY`     | 空                                   | 部署在反向代理之后时设为 `1`，按 X-Forwarded-For 识别真实 IP    |
-| `MAX_CONN_PER_IP` | `20`                                 | 每个 IP 同时的联机连接数上限                                    |
-| `DESKPARK_IMAGE`  | `ghcr.io/wanghlstar/deskpark:latest` | 使用的镜像与版本                                                |
-| `NPM_REGISTRY`    | 空                                   | 本地构建时使用的 npm 源                                         |
-| `VITE_SERVER_URL` | 空                                   | 网页与服务器分开部署时，网页连接的 WebSocket 地址（构建时生效） |
-| `DOMAIN`          | 空                                   | 启用 HTTPS 时的域名                                             |
+| 变量                       | 默认值                               | 说明                                                                      |
+| -------------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| `HTTP_PORT`                | `8787`                               | 对外端口                                                                  |
+| `HTTP_BIND`                | `0.0.0.0`                            | 监听地址；配合 HTTPS 时设为 `127.0.0.1`                                   |
+| `TURN_TIMEOUT_MS`          | `30000`                              | 联机时每一步的时限，超时由电脑代打                                        |
+| `AI_PROXY`                 | 开启                                 | 设为 `off` 关闭 AI 接口转发（见下方「AI 人机」）                          |
+| `AI_PROXY_ALLOWED_TARGETS` | 空                                   | 部署者允许转发的完整 AI 基址，多个用逗号分隔，支持 HTTP、内网和自定义端口 |
+| `TRUST_PROXY`              | 空                                   | 部署在反向代理之后时设为 `1`，按 X-Forwarded-For 识别真实 IP              |
+| `MAX_CONN_PER_IP`          | `20`                                 | 每个 IP 同时的联机连接数上限                                              |
+| `DESKPARK_IMAGE`           | `ghcr.io/wanghlstar/deskpark:latest` | 使用的镜像与版本                                                          |
+| `NPM_REGISTRY`             | 空                                   | 本地构建时使用的 npm 源                                                   |
+| `VITE_SERVER_URL`          | 空                                   | 网页与服务器分开部署时，网页连接的 WebSocket 地址（构建时生效）           |
+| `DOMAIN`                   | 空                                   | 启用 HTTPS 时的域名                                                       |
 
 ### AI 人机与接口转发
 
@@ -128,10 +129,15 @@ AI 人机由玩家在网页「设置 → AI 人机」中填写自己的接口与
 浏览器直连接口被跨域（CORS）拦截时，玩家可以开启「经服务器转发」，由本服务器的 `/api/ai-proxy/` 原样转发：
 
 - 只转发 Anthropic `/v1/messages` 与 OpenAI 兼容 `/chat/completions` 两个端点；
-- 目标必须是 https 公网域名（拒绝 IP、localhost 与解析到内网的域名），有请求大小、超时与每 IP 频率限制；
+- 默认目标必须是 https 公网域名（拒绝 IP、localhost 与解析到内网的域名），有请求大小、超时与每 IP 频率限制；
+- 部署者可用 `AI_PROXY_ALLOWED_TARGETS` 指定完整的本地 AI 基址，只放行所列协议、主机、端口及路径，不接受通配符；
 - 不记录、不保存任何 Key 与内容。
 
 不需要这个功能时，在 `.env` 中设置 `AI_PROXY=off`。
+
+例如访问 NAS 上的 OpenAI 兼容服务，在 `.env` 中设置 `AI_PROXY_ALLOWED_TARGETS=http://192.168.2.8:19020/v1`，执行 `docker compose up -d` 应用配置。原生 Node 部署则在启动进程的环境中设置同名变量；飞牛 FPK 可直接使用应用设置中的「本地 AI 接口」。玩家在网页里填写同一地址、有效 Key 与模型，并开启「经服务器转发」。
+
+关闭转发时，AI 请求直接由玩家浏览器发出，服务需允许页面来源的 CORS 预检；开启时由部署端连接 AI。单人 AI 接管的局面组织和模型结果处理在浏览器完成；联机房间中的电脑和托管由服务器执行内置规则策略。
 
 ## 七、不用 Docker
 

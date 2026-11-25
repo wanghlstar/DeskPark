@@ -26,7 +26,8 @@ export function hlAiPrompt(view: HlView, seat: Seat, rng: Rng): AiPrompt<HlActio
   const rec = heluoBot(view, seat, rng);
   const options: AiOption<HlAction>[] = [];
   if (L.pici) options.push({ label: '屁次（手里三张次牌，直接胡）', action: { type: 'pici' } });
-  if (L.hu) options.push({ label: '自摸胡牌', action: { type: 'hu' } });
+  if (L.hu)
+    options.push({ label: view.window ? '胡牌（点炮）' : '自摸胡牌', action: { type: 'hu' } });
 
   if (view.window) {
     const name = hlKindName(view.window.tile.kind);
@@ -60,11 +61,19 @@ export function hlAiPrompt(view: HlView, seat: Seat, rng: Rng): AiPrompt<HlActio
   if (options.length <= 1) return null;
 
   const mode = view.options.mode === 'soft' ? '软次（可自摸，也可次）' : '硬次（只能靠次胡牌）';
-  const lines = [
-    `玩法：河洛杠次，136 张，只能碰和杠，不能吃。${mode}。开杠先拿次牌试胡，胡了叫「次」；手里有三张与次牌同种可以「屁次」。`,
-    `次牌：${view.ciTile ? hlKindName(view.ciTile.kind) : hlKindName(view.ciKind)}。牌墙剩 ${view.wallCount} 张${view.baoActive ? '，已进入包次区（打生张被别人杠出次要包次）' : ''}。`,
+  const lines =
+    view.options.mode === 'plain'
+      ? [
+          '玩法：普通麻将，136 张含字牌，无癞子、不吃，可碰和杠。四组面子加一对将即可胡，可点炮或自摸，一家胡就结算。',
+          `没有定缺或次牌，不设特殊番型或抢杠；点炮付 1 分，自摸三家各付 1 分，杠只补牌。牌墙剩 ${view.wallCount} 张。`,
+        ]
+      : [
+          `玩法：河洛杠次，136 张，只能碰和杠，不能吃。${mode}。开杠先拿次牌试胡，胡了叫「次」；手里有三张与次牌同种可以「屁次」。`,
+          `次牌：${view.ciTile ? hlKindName(view.ciTile.kind) : hlKindName(view.ciKind)}。牌墙剩 ${view.wallCount} 张${view.baoActive ? '，已进入包次区（打生张被别人杠出次要包次）' : ''}。`,
+        ];
+  lines.push(
     `你的手牌（${view.hand.length} 张）：${tilesText(view.hand)}${view.drawn !== null ? `；刚摸到 ${hlKindName(Math.floor(view.drawn / 4))}` : ''}`,
-  ];
+  );
   const mine = view.players[seat];
   if (mine.melds.length) lines.push(`你的副露：${mine.melds.map(meldText).join('，')}`);
   for (const d of [1, 2, 3]) {
@@ -77,7 +86,7 @@ export function hlAiPrompt(view: HlView, seat: Seat, rng: Rng): AiPrompt<HlActio
   }
   if (view.window) {
     lines.push(
-      `${seatName(seat, view.window.source, 4)}刚打出 ${hlKindName(view.window.tile.kind)}，你要不要碰 / 杠？`,
+      `${seatName(seat, view.window.source, 4)}刚打出 ${hlKindName(view.window.tile.kind)}，你要不要${view.options.mode === 'plain' ? '胡 / ' : ''}碰 / 杠？`,
     );
   } else {
     lines.push('轮到你：可以开杠或打出一张牌。');

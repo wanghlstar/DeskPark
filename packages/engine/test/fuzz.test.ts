@@ -11,6 +11,7 @@ import {
   hexisle,
   highcard,
   onecard,
+  pinghu,
   shuangsheng,
   sichuan,
   spellstones,
@@ -200,6 +201,16 @@ describe('畸形动作模糊测试（模拟恶意联机客户端）', () => {
         4,
         heluogangci.defaultOptions,
         ['discard', 'gang', 'peng', 'pass', 'pici', 'hu', 'ready'],
+        seed,
+      );
+  });
+  it('普通麻将', () => {
+    for (let seed = 1; seed <= 8; seed++)
+      fuzz(
+        pinghu,
+        4,
+        pinghu.defaultOptions,
+        ['discard', 'gang', 'peng', 'pass', 'hu', 'ready'],
         seed,
       );
   });

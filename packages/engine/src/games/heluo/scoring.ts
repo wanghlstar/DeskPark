@@ -1,7 +1,7 @@
 import type { Seat } from '../../core/types';
 
 /** 胡牌方式 */
-export type WinKind = 'mingci' | 'anci' | 'pici' | 'zimo' | 'baoci';
+export type WinKind = 'mingci' | 'anci' | 'pici' | 'zimo' | 'baoci' | 'dianpao';
 /** 杠的类型：明杠（杠别人打出的牌）/ 暗杠 / 加杠（碰后补杠） */
 export type KongType = 'ming' | 'an' | 'ba';
 
@@ -11,6 +11,7 @@ export const WIN_NAME: Record<WinKind, string> = {
   pici: '屁次',
   zimo: '自摸',
   baoci: '包次',
+  dianpao: '胡牌',
 };
 
 export const KONG_NAME: Record<KongType, string> = { ming: '明杠', an: '暗杠', ba: '加杠' };
@@ -32,6 +33,11 @@ export function winDeltas(
   baoFrom: Seat | null,
 ): number[] {
   const d = [0, 0, 0, 0];
+  if (kind === 'dianpao' && from !== null) {
+    d[from] -= 1;
+    d[winner] += 1;
+    return d;
+  }
   if (kind === 'baoci' && baoFrom !== null) {
     d[baoFrom] -= 4;
     d[winner] += 4;

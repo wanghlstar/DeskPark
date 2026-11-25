@@ -23,10 +23,10 @@ export * from './tiles';
 const N = 4;
 
 export type HlPhase = 'play' | 'roundOver' | 'matchOver';
-export type HlMode = 'soft' | 'hard';
+export type HlMode = 'soft' | 'hard' | 'plain';
 
 export interface HlOptions {
-  /** soft 软次（可自摸）/ hard 硬次（只能次） */
+  /** soft 软次 / hard 硬次 / plain 普通麻将 */
   mode: HlMode;
   /** 是否启用包次 */
   baoCi: boolean;
@@ -68,7 +68,7 @@ export interface HlPlayer {
   won: HlWin | null;
 }
 
-export type ClaimChoice = 'gang' | 'peng' | 'pass';
+export type ClaimChoice = 'hu' | 'gang' | 'peng' | 'pass';
 
 export interface ClaimWindow {
   kind: 'claims';
@@ -104,7 +104,7 @@ export interface HlResult {
 export type HlEvent =
   | { type: 'peng'; seat: Seat; from: Seat; seq: number }
   | { type: 'gang'; seat: Seat; from: Seat | null; seq: number }
-  | { type: 'ci' | 'pici' | 'zimo'; seat: Seat; from: Seat | null; seq: number };
+  | { type: 'ci' | 'pici' | 'zimo' | 'hu'; seat: Seat; from: Seat | null; seq: number };
 
 type HlEventInput = HlEvent extends infer E
   ? E extends { seq: number }
@@ -226,13 +226,44 @@ function isFresh(s: HlState, kind: number): boolean {
   return true;
 }
 
-/** 洗牌、亮次牌、发牌，开始新一盘 */
+/** 共用的四人麻将状态；规则差异由独立玩法固定，不能由客户端切换。 */
+function initialState(options: HlOptions, seed: number): HlState {
+  const s: HlState = {
+    options,
+    rng: seed >>> 0,
+    round: 1,
+    phase: 'play',
+    dealer: 0,
+    wall: [],
+    ciTile: null,
+    ciKind: -1,
+    players: [],
+    turn: 0,
+    turnDrawn: false,
+    drawnThisTurn: null,
+    window: null,
+    lastDiscard: null,
+    discards: 0,
+    gangDeltas: [0, 0, 0, 0],
+    gangLedger: [],
+    scores: [0, 0, 0, 0],
+    ready: [false, false, false, false],
+    result: null,
+    history: [],
+    events: [],
+    eventSeq: 0,
+  };
+  deal(s);
+  return s;
+}
+
+/** 洗牌、发牌，河洛杠次另亮出一张次牌。 */
 function deal(s: HlState) {
   const rng = new Rng(s.rng);
   const tiles = rng.shuffle(createHlTiles());
-  const ci = tiles.pop()!;
+  const ci = s.options.mode === 'plain' ? null : tiles.pop()!;
   s.ciTile = ci;
-  s.ciKind = ci.kind;
+  s.ciKind = ci?.kind ?? -1;
   s.rng = rng.state;
   s.players = [0, 1, 2, 3].map(() => ({ hand: [], melds: [], river: [], won: null }));
   for (let i = 0; i < 13; i++)
@@ -240,7 +271,7 @@ function deal(s: HlState) {
   s.players[s.dealer].hand.push(tiles.shift()!);
   s.wall = tiles;
   s.turn = s.dealer;
-  s.turnDrawn = false;
+  s.turnDrawn = s.options.mode === 'plain';
   s.drawnThisTurn = null;
   s.window = null;
   s.lastDiscard = null;
@@ -290,7 +321,12 @@ function finishWin(
   from: Seat | null,
   baoFrom: Seat | null,
 ) {
-  const deltas = winDeltas(kind, seat, from, baoFrom).map((x, i) => x + s.gangDeltas[i]);
+  const deltas =
+    s.options.mode === 'plain'
+      ? [0, 1, 2, 3].map((i) =>
+          from === null ? (i === seat ? 3 : -1) : i === seat ? 1 : i === from ? -1 : 0,
+        )
+      : winDeltas(kind, seat, from, baoFrom).map((x, i) => x + s.gangDeltas[i]);
   const win: HlWin = { seat, kind, tile, from: kind === 'baoci' ? baoFrom : from, deltas };
   s.players[seat].won = win;
   s.scores = s.scores.map((x, i) => x + deltas[i]);
@@ -308,7 +344,7 @@ function finishWin(
   s.phase = 'roundOver';
   s.window = null;
   pushEvent(s, {
-    type: kind === 'pici' ? 'pici' : kind === 'zimo' ? 'zimo' : 'ci',
+    type: kind === 'dianpao' ? 'hu' : kind === 'pici' ? 'pici' : kind === 'zimo' ? 'zimo' : 'ci',
     seat,
     from,
   });
@@ -349,7 +385,7 @@ function afterKong(
     finishWin(s, seat, kind, s.ciTile, from, baoFrom);
     return;
   }
-  addGang(s, kongDeltas(type, seat, from), seat, `gang.${type}`);
+  if (s.options.mode !== 'plain') addGang(s, kongDeltas(type, seat, from), seat, `gang.${type}`);
   pushEvent(s, { type: 'gang', seat, from });
   drawBack(s, seat);
 }
@@ -358,7 +394,7 @@ function windowDone(w: ClaimWindow) {
   return w.required.every((r, i) => !r || w.decisions[i] !== null);
 }
 
-/** 有人打出牌后，开放碰 / 杠的表态窗口（不能吃、不能点炮胡） */
+/** 有人打出牌后开放表态窗口；普通麻将还可点炮胡。 */
 function openClaims(s: HlState, source: Seat, tile: HlTile, baoFresh: boolean) {
   const w: ClaimWindow = {
     kind: 'claims',
@@ -375,6 +411,8 @@ function openClaims(s: HlState, source: Seat, tile: HlTile, baoFresh: boolean) {
     if (p.won) continue;
     w.required[seat] = true;
     const opts: ClaimChoice[] = [];
+    if (s.options.mode === 'plain' && isHlWin(countHlKinds([...p.hand, tile]), p.melds.length))
+      opts.push('hu');
     const n = countKind(p.hand, tile.kind);
     if (n >= 3 && s.wall.length > 0) opts.push('gang');
     if (n >= 2) opts.push('peng');
@@ -390,7 +428,7 @@ function openClaims(s: HlState, source: Seat, tile: HlTile, baoFresh: boolean) {
   else drawFront(s, nextActive(s, source));
 }
 
-/** 表态结束：杠 > 碰 > 过；同级按出牌顺序靠前者优先 */
+/** 表态结束：胡 > 杠 > 碰 > 过；同级按出牌顺序靠前者优先。 */
 function resolveClaims(s: HlState) {
   const w = s.window!;
   const order = nextThree(w.source);
@@ -399,6 +437,12 @@ function resolveClaims(s: HlState) {
   const source = w.source;
   const baoFrom = w.baoFresh && inBaoZone(s) ? source : null;
   s.window = null;
+
+  const winner = order.find((seat) => dec(seat)?.type === 'hu');
+  if (winner !== undefined) {
+    finishWin(s, winner, 'dianpao', tile, source, null);
+    return;
+  }
 
   const ganger = order.find((seat) => dec(seat)?.type === 'gang');
   if (ganger !== undefined) {
@@ -477,6 +521,7 @@ export function legalOf(s: HlState, seat: Seat): HlLegal {
     const opts = w.options[seat] ?? [];
     return {
       ...none,
+      hu: opts.includes('hu'),
       peng: opts.includes('peng'),
       pass: opts.includes('pass'),
       gang: opts.includes('gang')
@@ -487,7 +532,9 @@ export function legalOf(s: HlState, seat: Seat): HlLegal {
 
   if (s.turn !== seat || p.won) return none;
   // 摸牌后（或庄家起手）才能开暗杠 / 加杠；碰牌后只能出牌
-  const canKong = s.turnDrawn || (s.discards === 0 && seat === s.dealer);
+  const canKong =
+    (s.turnDrawn || (s.discards === 0 && seat === s.dealer)) &&
+    (s.options.mode !== 'plain' || s.wall.length > 0);
   const gang: HlLegal['gang'] = [];
   if (canKong) {
     const seen = new Set<number>();
@@ -501,9 +548,9 @@ export function legalOf(s: HlState, seat: Seat): HlLegal {
     }
   }
   // 屁次：手里有三张次牌即可，其余手牌不论
-  const pici = countKind(p.hand, s.ciKind) >= 3;
+  const pici = s.options.mode !== 'plain' && countKind(p.hand, s.ciKind) >= 3;
   const hu =
-    s.options.mode === 'soft' && s.turnDrawn && isHlWin(countHlKinds(p.hand), p.melds.length);
+    s.options.mode !== 'hard' && s.turnDrawn && isHlWin(countHlKinds(p.hand), p.melds.length);
   return { ...none, discard: p.hand.map((t) => t.id), gang, pici, hu };
 }
 
@@ -562,33 +609,7 @@ export const heluogangci: GameDefinition<HlState, HlAction, HlView, HlOptions> =
       baoThreshold: Number.isFinite(options?.baoThreshold) ? options.baoThreshold : 10,
       rounds: Number.isFinite(options?.rounds) ? Math.max(0, Math.floor(options.rounds)) : 4,
     };
-    const s: HlState = {
-      options: opts,
-      rng: seed >>> 0,
-      round: 1,
-      phase: 'play',
-      dealer: 0,
-      wall: [],
-      ciTile: null,
-      ciKind: 0,
-      players: [],
-      turn: 0,
-      turnDrawn: false,
-      drawnThisTurn: null,
-      window: null,
-      lastDiscard: null,
-      discards: 0,
-      gangDeltas: [0, 0, 0, 0],
-      gangLedger: [],
-      scores: [0, 0, 0, 0],
-      ready: [false, false, false, false],
-      result: null,
-      history: [],
-      events: [],
-      eventSeq: 0,
-    };
-    deal(s);
-    return s;
+    return initialState(opts, seed);
   },
 
   activeSeats(s) {
@@ -693,6 +714,11 @@ export const heluogangci: GameDefinition<HlState, HlAction, HlView, HlOptions> =
         finishWin(s, seat, 'pici', null, null, null);
         return s;
       case 'hu': {
+        if (s.window) {
+          s.window.decisions[seat] = { type: 'hu' };
+          if (windowDone(s.window)) resolveClaims(s);
+          return s;
+        }
         const tile =
           p.hand.find((t) => t.id === s.drawnThisTurn) ?? p.hand[p.hand.length - 1] ?? null;
         finishWin(s, seat, 'zimo', tile, null, null);
@@ -743,4 +769,42 @@ export const heluogangci: GameDefinition<HlState, HlAction, HlView, HlOptions> =
 
   bot: heluoBot,
   aiPrompt: hlAiPrompt,
+};
+
+/** 普通麻将：与河洛杠次共用牌桌流程，不启用次牌及地方计分。 */
+export const pinghu: GameDefinition<HlState, HlAction, HlView, HlOptions> = {
+  ...heluogangci,
+  meta: {
+    id: 'pinghu',
+    category: 'mahjong',
+    name: '普通麻将',
+    nameEn: 'Basic Mahjong',
+    tagline: '136 张，碰杠、点炮、自摸，胡了就结算',
+    minPlayers: 4,
+    maxPlayers: 4,
+    defaultPlayers: 4,
+    botDelayMs: [450, 950],
+    rules: [
+      '4 人，万、条、筒和东南西北中发白共 136 张，无花牌、无癞子，不吃牌。',
+      '庄家起手 14 张，其余 13 张；直接摸打，不换三张、不定缺、不设次牌。',
+      '可以碰、明杠、暗杠和补杠；杠后从牌墙尾补一张，杠不另计分，不设抢杠胡。',
+      '四组面子加一对将即可胡；面子可以是同花色连续三张或三张相同牌，字牌不能组顺子；不设七对等特殊牌型。',
+      '可以点炮或自摸，一家胡牌即结束本盘；胡优先于碰杠，多人胡同一张时按出牌顺序截胡。',
+      '点炮由放炮者付 1 分，自摸由其余三家各付 1 分；胡牌者下盘坐庄。',
+      '牌墙摸完无人胡则荒庄，不计分，庄家不换。',
+    ],
+  },
+  defaultOptions: { mode: 'plain', baoCi: false, baoThreshold: 10, rounds: 4 },
+  optionFields: heluogangci.optionFields.filter((f) => f.key === 'rounds'),
+  setup({ options, seed }) {
+    return initialState(
+      {
+        mode: 'plain',
+        baoCi: false,
+        baoThreshold: 10,
+        rounds: Number.isFinite(options?.rounds) ? Math.max(0, Math.floor(options.rounds)) : 4,
+      },
+      seed,
+    );
+  },
 };

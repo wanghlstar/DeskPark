@@ -5,7 +5,7 @@
 原始仓库：[solitern/DeskPark](https://github.com/solitern/DeskPark) · 本仓库：[wanghlstar/DeskPark](https://github.com/wanghlstar/DeskPark)<br/>
 合并来源：[Aertox/DeskPark](https://github.com/Aertox/DeskPark) · [yeyinghai/DeskPark](https://github.com/yeyinghai/DeskPark)
 
-**简洁优雅的网页桌游平台** —— 斗地主、掼蛋、双升、西游记、德州扑克、四川麻将（血战到底）、河洛杠次、中国象棋、国际象棋、桌游「魔法出包」「UON」「卡旦岛」「宝石商会」，单人练习或与好友联机。<br/>
+**简洁优雅的网页桌游平台** —— 斗地主、掼蛋、双升、西游记、德州扑克、普通麻将、四川麻将（血战到底）、河洛杠次、中国象棋、国际象棋、桌游「魔法出包」「UON」「卡旦岛」「宝石商会」，单人练习或与好友联机。<br/>
 打开网页即玩，规则引擎与界面分离，可扩展自定义玩法，并为移植 App 预留了结构。
 
 [![CI](https://github.com/wanghlstar/DeskPark/actions/workflows/ci.yml/badge.svg)](https://github.com/wanghlstar/DeskPark/actions/workflows/ci.yml)
@@ -16,6 +16,10 @@
 </div>
 
 ## 新增玩法
+
+### 普通麻将（136 张基础玩法）
+
+4 人，万条筒和东南西北中发白，共 136 张，无花牌、无癞子、不吃。直接摸打，可碰、明杠、暗杠、补杠；四组面子加一对将即可胡，可点炮或自摸，一家胡牌就结算。不换三张、不定缺、不设次牌或复杂番型；点炮由放炮者付 1 分，自摸其余三家各付 1 分，杠只补牌。支持单人电脑、联机与单人 AI 接管。
 
 > ![新增](https://img.shields.io/badge/新增-双升-e4572e) ![新增](https://img.shields.io/badge/新增-河洛杠次-e4572e) ![新增](https://img.shields.io/badge/新增-西游记-e4572e) 从 [yeyinghai/DeskPark](https://github.com/yeyinghai/DeskPark) 合入的三款玩法，均支持单人对电脑、联机与大模型接管。
 
@@ -70,6 +74,7 @@
 - **像素形象**：赛博朋克、修仙、动漫、卡通四组共 22 个原创像素头像，每个都有对应的全身像素立绘（带待机动作）；切换「虚拟形象」后牌桌上所有人都以全身像显示，另有 8 个特别角色可选。
 - **AI 人机**：在设置里填写自己的大模型接口（Anthropic 或任意 OpenAI 兼容接口，如 DeepSeek、通义千问），点电脑玩家头像上方的 ✨ 即可让大模型接管它：读取它的手牌与场上局势来决定出牌（各玩法均已支持，含双升的亮主 / 反主 / 出牌、河洛杠次的碰杠 / 屁次 / 自摸 / 打牌与西游记的出牌；双升扣底与发牌中抢亮仍由规则电脑决定），思考时显示省略号，还会偶尔发言、回应你的聊天。
 - **房间聊天**：等待房间与对局中都能聊天，支持快捷语、未读提醒与消息浮窗；另有表情互动。
+- **本地 AI**：飞牛安装或应用设置可指定允许转发的本地接口（含 HTTP、自定义端口），网页开启「经服务器转发」后由飞牛连接 AI；关闭时由浏览器直连，需要 AI 服务支持跨域。单人 AI 接管由浏览器管理，联机电脑使用服务端内置规则策略。
 - **单人 & 多人**：单人与电脑对战（规则 AI，德州使用蒙特卡洛胜率估算；也可唤醒大模型接管）；联机输入 4 位房间号或分享链接即可加入，空位由电脑补齐。
 - **服务端权威**：联机时规则在服务器运行，每个座位只收到自己能看到的信息，杜绝作弊；断线重连自动恢复座位，离线/超时自动托管。
 - **可扩展玩法**：所有玩法都实现同一个 `GameDefinition` 插件接口，附带示例玩法「比大小」与 [新增玩法指南](https://github.com/wanghlstar/DeskPark/blob/main/docs/ADDING_A_GAME.md)。
@@ -139,6 +144,8 @@ docker compose pull && docker compose up -d     # 打开 http://服务器IP:8787
 ### 飞牛 fnOS 应用
 
 原生 FPK 包含网页和联机服务，依赖飞牛 Node.js 22，安装时可填写访问端口（默认 `8787`），安装后从桌面图标打开。在 **fnOS FPK** Actions 工作流下载 `deskpark-fnos` 产物，手动安装其中的 `.fpk`；详细步骤与构建方式见 [飞牛安装指南](https://github.com/wanghlstar/DeskPark/blob/main/docs/FNOS.md)。
+
+已发布的 FPK 与 APK 可从 [Releases](https://github.com/wanghlstar/DeskPark/releases) 下载；Alpha 测试版标记为 Pre-release。推送版本标签后，由 **Release** Actions 工作流完成构建与附件发布。
 
 ## 项目结构
 

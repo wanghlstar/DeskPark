@@ -12,6 +12,7 @@ import {
   hexisle,
   highcard,
   onecard,
+  pinghu,
   shuangsheng,
   sichuan,
   spellstones,
@@ -127,6 +128,12 @@ describe('大模型接管：候选动作', () => {
       expect(
         checkPrompts(heluogangci, 4, { ...heluogangci.defaultOptions, rounds: 1 }, seed),
       ).toBeGreaterThan(20);
+  });
+  it('普通麻将', () => {
+    for (let seed = 1; seed <= 4; seed++)
+      expect(
+        checkPrompts(pinghu, 4, { ...pinghu.defaultOptions, rounds: 1 }, seed),
+      ).toBeGreaterThan(10);
   });
   it('比大小', () => {
     expect(checkPrompts(highcard, 4, { rounds: 1 }, 3)).toBeGreaterThan(5);

@@ -18,6 +18,19 @@
             "message": "请输入 1024–65535 之间的整数端口"
           }
         ]
+      },
+      {
+        "type": "text",
+        "field": "wizard_ai_target",
+        "label": "本地 AI 接口（可选）",
+        "initValue": "",
+        "helpText": "填写允许转发的完整接口地址，例如 http://127.0.0.1:19020/v1。无需填写 Key；留空只允许公网接口。",
+        "rules": [
+          {
+            "pattern": "^(https?://[^\\s?#@]+)?$",
+            "message": "请填写 http:// 或 https:// 接口地址，不含账号密码、查询参数或片段；也可留空"
+          }
+        ]
       }
     ]
   }

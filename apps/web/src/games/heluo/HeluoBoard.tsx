@@ -28,6 +28,7 @@ const WIN_NAME: Record<hl.WinKind, string> = {
   pici: '屁次',
   zimo: '自摸',
   baoci: '包次',
+  dianpao: '胡牌',
 };
 const EVENT_TEXT: Record<string, string> = {
   peng: '碰',
@@ -35,6 +36,7 @@ const EVENT_TEXT: Record<string, string> = {
   ci: '次',
   pici: '屁次',
   zimo: '自摸',
+  hu: '胡',
 };
 
 function useWidth<T extends HTMLElement>() {
@@ -204,6 +206,7 @@ function River({
 
 export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
   const v = ctl.view!;
+  const plain = v.options.mode === 'plain';
   const spectator = ctl.seat === null;
   const me = ctl.seat ?? 0;
   const pos = (s: number) => (['bottom', 'right', 'top', 'left'] as const)[(s - me + 4) % 4];
@@ -246,7 +249,7 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
       const id = e.seq;
       setShouts((list) => [...list, { id, seat: e.seat, text }]);
       window.setTimeout(() => setShouts((list) => list.filter((x) => x.id !== id)), 1500);
-      if (e.type === 'ci' || e.type === 'pici' || e.type === 'zimo')
+      if (e.type === 'ci' || e.type === 'pici' || e.type === 'zimo' || e.type === 'hu')
         playSound(e.seat === me ? 'win' : 'chip');
       else playSound(e.type === 'gang' ? 'bomb' : 'select');
       window.setTimeout(() => speak(text), 450);
@@ -385,11 +388,15 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
           第 <b className="num">{v.round}</b>
           {v.options.rounds ? ` / ${v.options.rounds}` : ''} 盘
         </span>
-        <span className="chip hl-ci-chip">
-          次牌 <HlTileView tile={v.ciTile} w="calc(var(--rw) * 0.9)" />
-        </span>
+        {!plain && (
+          <span className="chip hl-ci-chip">
+            次牌 <HlTileView tile={v.ciTile} w="calc(var(--rw) * 0.9)" />
+          </span>
+        )}
         {v.baoActive && <span className="chip is-gold">已进入包次区</span>}
-        <span className="chip">{v.options.mode === 'hard' ? '硬次' : '软次'}</span>
+        <span className="chip">
+          {plain ? '普通麻将 · 点炮 / 自摸' : v.options.mode === 'hard' ? '硬次' : '软次'}
+        </span>
       </div>
 
       <div className="sc-area is-top">{seatBlock(seatAt('top'))}</div>
@@ -448,6 +455,11 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
                 {ctl.players[v.window.source].name} 打出
                 <HlTileView tile={v.window.tile} w="calc(var(--rw) * 1.1)" />
               </span>
+              {L.hu && (
+                <Button variant="felt-primary" onClick={() => act({ type: 'hu' })}>
+                  胡
+                </Button>
+              )}
               {L.gang.length > 0 && L.gang[0].ci && (
                 <Button variant="felt-primary" onClick={() => act({ type: 'gang' })}>
                   杠次
@@ -626,6 +638,7 @@ function RoundResult({
   spectator: boolean;
 }) {
   const r = v.result!;
+  const plain = v.options.mode === 'plain';
   const matchOver = v.phase === 'matchOver';
   const readyCount = v.ready.filter(Boolean).length;
   const order = matchOver ? [0, 1, 2, 3].sort((a, b) => v.scores[b] - v.scores[a]) : [0, 1, 2, 3];
@@ -634,7 +647,9 @@ function RoundResult({
       ? '本场第一'
       : '本场结束'
     : r.reason === 'wall'
-      ? '荒庄（庄家不换，杠分作废）'
+      ? plain
+        ? '荒庄（不计分，庄家不换）'
+        : '荒庄（庄家不换，杠分作废）'
       : r.win!.seat === me && !spectator
         ? WIN_NAME[r.win!.kind]
         : '本盘结束';
@@ -677,7 +692,7 @@ function RoundResult({
             <tr>
               <th>玩家</th>
               <th>本盘</th>
-              <th className="num">杠分</th>
+              {!plain && <th className="num">杠分</th>}
               <th className="num">得分</th>
               <th className="num">总分</th>
             </tr>
@@ -696,13 +711,15 @@ function RoundResult({
                     <span className="mini-tag">{WIN_NAME[r.win.kind]}</span>
                   ) : r.win?.from === s ? (
                     <span className="mini-tag is-plain">
-                      {r.win.kind === 'baoci' ? '包次' : '点杠'}
+                      {r.win.kind === 'dianpao' ? '点炮' : r.win.kind === 'baoci' ? '包次' : '点杠'}
                     </span>
                   ) : null}
                 </td>
-                <td className="num">
-                  {r.gangCounted ? signed(r.gangDeltas[s]) : <s>{signed(r.gangDeltas[s])}</s>}
-                </td>
+                {!plain && (
+                  <td className="num">
+                    {r.gangCounted ? signed(r.gangDeltas[s]) : <s>{signed(r.gangDeltas[s])}</s>}
+                  </td>
+                )}
                 <td className={`num ${r.deltas[s] >= 0 ? 'delta-pos' : 'delta-neg'}`}>
                   {signed(r.deltas[s])}
                 </td>

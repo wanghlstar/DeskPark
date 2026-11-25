@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  fpk:
+    name: Build FPK
+    uses: ./.github/workflows/fnos.yml
+
+  apk:
+    name: Build APK
+    uses: ./.github/workflows/android.yml
+
+  publish:
+    name: Publish release
+    needs: [fpk, apk]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: deskpark-fnos
+          path: release
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: deskpark-android
+          path: release
+
+      - name: Prepare APK and checksums
+        working-directory: release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          APK="deskpark-${RELEASE_TAG#v}.apk"
+          mv deskpark-debug.apk "$APK"
+          sha256sum "$APK" > "$APK.sha256"
+
+      - name: Publish FPK and APK
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: docs/RELEASE_NOTES.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ contains(github.ref_name, '-') && 'false' || 'true' }}
+          fail_on_unmatched_files: true
+          files: |
+            release/*.fpk
+            release/*.apk
+            release/*.sha256

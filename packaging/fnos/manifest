@@ -1,5 +1,5 @@
 appname=deskpark
-version=0.3.0
+version=0.3.1
 display_name=闲亭 DeskPark
 desc=网页桌游平台，支持扑克、麻将、棋类等玩法，可单人练习或与好友联机。
 platform=all

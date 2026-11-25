@@ -49,6 +49,7 @@ start_service() {
     [ -f "$SERVER" ] || { fail '缺少 DeskPark 服务文件，请重新安装应用。'; return 1; }
     command -v node >/dev/null || { fail '未找到 Node.js，请安装飞牛 Node.js 22 运行时。'; return 1; }
     export NODE_ENV=production HOST=0.0.0.0
+    export AI_PROXY_ALLOWED_TARGETS="${wizard_ai_target-${AI_PROXY_ALLOWED_TARGETS:-}}"
     export PORT="${wizard_port-${TRIM_SERVICE_PORT:-8787}}" STATIC_DIR="${TRIM_APPDEST}/web"
     if ! [[ "$PORT" =~ ^[1-9][0-9]{3,4}$ ]] || [ "$PORT" -lt 1024 ] || [ "$PORT" -gt 65535 ]; then
         fail '服务端口必须为 1024–65535 之间的整数，请重新填写。'

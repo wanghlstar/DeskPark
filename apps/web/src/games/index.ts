@@ -72,6 +72,18 @@ export const GAME_UIS: GameUI[] = [
     people: '2–8 人',
   },
   {
+    id: 'pinghu',
+    Board: lazy(() => import('./heluo/HeluoBoard')),
+    tint: ['#447e65', '#244637'],
+    showcase: [],
+    tiles: [
+      { id: 1, suit: 'wan', rank: 3 },
+      { id: 2, suit: 'tong', rank: 5 },
+      { id: 3, suit: 'tiao', rank: 7 },
+    ],
+    people: '4 人 · 136 张普通麻将',
+  },
+  {
     id: 'heluogangci',
     Board: lazy(() => import('./heluo/HeluoBoard')),
     tint: ['#8f3d2f', '#4a1f18'],

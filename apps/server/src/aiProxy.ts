@@ -2,6 +2,7 @@ import type { LookupAddress } from 'node:dns';
 import { lookup as lookupCb } from 'node:dns';
 import { lookup } from 'node:dns/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import type { LookupFunction } from 'node:net';
 import { isIP } from 'node:net';
@@ -12,7 +13,7 @@ import { clientIp } from './net';
  *
  * 安全约束：
  * - 只转发两个固定端点：Anthropic `/v1/messages` 与 OpenAI 兼容 `/chat/completions`；
- * - 目标必须是 https 域名（不接受 IP 字面量、localhost），解析结果不能是内网 / 回环地址；
+ * - 默认仅允许 https 公网域名；管理员可用 AI_PROXY_ALLOWED_TARGETS 指定完整的本地接口基址；
  * - 限制请求体大小、超时与每个 IP 的频率；不记录、不保存任何 Key。
  * 设置环境变量 AI_PROXY=off 可关闭。
  */
@@ -70,6 +71,26 @@ export function isPrivateAddress(ip: string): boolean {
   );
 }
 
+/** 只有部署者指定的完整基址才能使用 HTTP、内网和自定义端口。 */
+function allowedTarget(url: URL): boolean {
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  )
+    return false;
+  const base = url.href.replace(/\/+$/, '');
+  return (process.env.AI_PROXY_ALLOWED_TARGETS ?? '').split(/[,\n]/).some((raw) => {
+    try {
+      return new URL(raw.trim()).href.replace(/\/+$/, '') === base;
+    } catch {
+      return false;
+    }
+  });
+}
+
 /** 校验目标地址，返回规范化后的 base URL；不合法时抛出给前端看的错误信息 */
 export async function checkTarget(raw: string | undefined): Promise<URL> {
   let url: URL;
@@ -78,8 +99,10 @@ export async function checkTarget(raw: string | undefined): Promise<URL> {
   } catch {
     throw new Error('目标接口地址无效');
   }
-  if (url.protocol !== 'https:') throw new Error('只能转发到 https 接口');
   if (url.username || url.password) throw new Error('目标地址不能包含账号密码');
+  if (allowedTarget(url)) return url;
+  if (url.protocol !== 'https:')
+    throw new Error('只能转发到 https 公网接口；本地 AI 需由部署者配置允许地址');
   if (url.port && url.port !== '443') throw new Error('只能转发到默认 443 端口');
   const host = url.hostname.replace(/^\[|\]$/g, '');
   if (isIP(host) || host === 'localhost' || host.endsWith('.localhost') || !host.includes('.')) {
@@ -155,7 +178,7 @@ export async function handleAiProxy(req: IncomingMessage, res: ServerResponse): 
   }
   const path = `${target.pathname.replace(/\/+$/, '')}${route.path}`;
   try {
-    const r = await forward(target.hostname, path, headers, body);
+    const r = await forward(target, path, headers, body);
     res.writeHead(r.status, { 'content-type': r.type, ...cors });
     res.end(r.body);
   } catch (e) {
@@ -181,20 +204,21 @@ const safeLookup: LookupFunction = (host, options, callback) => {
 };
 
 function forward(
-  hostname: string,
+  target: URL,
   path: string,
   headers: Record<string, string>,
   body: Buffer,
 ): Promise<{ status: number; type: string; body: Buffer }> {
   return new Promise((resolve, reject) => {
-    const req = httpsRequest(
+    const request = target.protocol === 'http:' ? httpRequest : httpsRequest;
+    const req = request(
       {
-        hostname,
-        port: 443,
+        hostname: target.hostname.replace(/^\[|\]$/g, ''),
+        port: target.port || (target.protocol === 'http:' ? 80 : 443),
         path,
         method: 'POST',
         headers: { ...headers, 'content-length': String(body.length) },
-        lookup: safeLookup,
+        lookup: allowedTarget(target) ? undefined : safeLookup,
         timeout: TIMEOUT_MS,
       },
       (r) => {

@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { once } from 'node:events';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
+import { createServer as createHttpServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -133,4 +134,39 @@ test('端口已占用时启动失败并提供可见错误', async (t) => {
   assert.equal((await invoke('start', env)).code, 1);
   assert.match(readFileSync(env.TRIM_TEMP_LOGFILE, 'utf8'), /端口/);
   assert.equal((await invoke('status', env)).code, 3);
+});
+
+test('飞牛配置将本地 AI 地址用于转发，配置更新后生效且不自动启动已停止的应用', async (t) => {
+  const { env, url } = await fixture(t);
+  const install = JSON.parse(readFileSync(join(pack, 'wizard/install'), 'utf8'));
+  const config = JSON.parse(readFileSync(join(pack, 'wizard/config'), 'utf8'));
+  for (const steps of [install, config]) {
+    assert.ok(
+      steps.flatMap((step) => step.items).some((item) => item.field === 'wizard_ai_target'),
+    );
+  }
+  const ai = createHttpServer((req, res) => {
+    assert.equal(req.url, '/v1/chat/completions');
+    assert.equal(req.headers.authorization, 'Bearer fpk-test-key');
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ choices: [{ message: { content: '你好' } }] }));
+  }).listen(0, '127.0.0.1');
+  await once(ai, 'listening');
+  t.after(() => new Promise((resolve) => ai.close(resolve)));
+  const target = `http://127.0.0.1:${ai.address().port}/v1`;
+  const post = () =>
+    fetch(`${url}/api/ai-proxy/openai/chat/completions`, {
+      method: 'POST',
+      headers: { 'x-ai-target': target, authorization: 'Bearer fpk-test-key' },
+      body: '{}',
+    });
+  env.wizard_ai_target = target;
+  assert.equal((await invoke('config_callback', env)).code, 0);
+  assert.equal((await invoke('status', env)).code, 3);
+  assert.equal((await invoke('start', env)).code, 0);
+  assert.equal((await post()).status, 200);
+  env.wizard_ai_target = '';
+  const configured = await invoke('config_callback', env);
+  assert.equal(configured.code, 0, configured.stderr);
+  assert.equal((await post()).status, 400);
 });
