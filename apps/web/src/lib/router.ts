@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { getServerAddress } from './platform';
 
 /** 基于 hash 的极简路由，兼容静态托管与 App WebView。 */
 export type Route =
@@ -44,8 +45,10 @@ export function navigate(path: string, replace = false): void {
   }
 }
 
-/** 邀请链接：打包成 App 时页面地址是本地的，用构建时注入的 VITE_PUBLIC_URL（线上网页地址）代替 */
+/** App 自选服务器时邀请指向该服务，否则沿用构建预设或当前网页地址。 */
 export function roomLink(code: string): string {
+  const saved = getServerAddress();
+  if (saved) return `${saved}/#/room/${code}`;
   const pub = import.meta.env.VITE_PUBLIC_URL as string | undefined;
   const base = pub ? pub.replace(/\/?$/, '/') : `${location.origin}${location.pathname}`;
   return `${base}#/room/${code}`;

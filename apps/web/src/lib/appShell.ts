@@ -5,9 +5,13 @@
  * 连不上（无网络 / 服务器维护）就使用 APK 内置的离线版本，单人模式照常可玩。
  * 普通网页构建不注入该变量，这里什么也不做。
  */
+import { getServerAddress } from './platform';
+
 const PROBE_TIMEOUT_MS = 6000;
 
 function remoteTarget(): URL | null {
+  // 自选服务器保持使用内置页面，避免跳往旧预设或丢失本机配置。
+  if (getServerAddress()) return null;
   const remote = import.meta.env.VITE_REMOTE_URL as string | undefined;
   if (!remote) return null;
   try {

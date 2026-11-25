@@ -66,6 +66,17 @@ jobs:
             --iconBackgroundColor '#1f5c4f' --splashBackgroundColor '#f4f1ea' \
             --splashBackgroundColorDark '#f4f1ea'
           npx cap sync android
+          # HTTPS 本地页面需同时允许混合内容及明文网络，才能连接用户填写的局域网 HTTP / WS。
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const synced = JSON.parse(fs.readFileSync('android/app/src/main/assets/capacitor.config.json', 'utf8'));
+          assert.equal(synced.server.androidScheme, 'https');
+          assert.equal(synced.server.cleartext, true);
+          assert.equal(synced.android.allowMixedContent, true);
+          const manifest = fs.readFileSync('android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml', 'utf8');
+          assert.ok(manifest.includes('android:usesCleartextTraffic="true"'));
+          NODE
 
       - name: Gradle assembleDebug
         working-directory: mobile/android

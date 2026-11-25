@@ -28,8 +28,51 @@ export const storage = {
   },
 };
 
-/** 联机服务器 WebSocket 地址：优先使用构建时注入的 VITE_SERVER_URL，否则与页面同源。 */
-export function serverUrl(): string {
+/** 统一保存服务 origin；本项目的 WebSocket 固定挂载在 /ws。 */
+export function normalizeServerAddress(input: string): string {
+  const value = input.trim();
+  if (!value) return '';
+  try {
+    const url = new URL(value.includes('://') ? value : `http://${value}`);
+    if (
+      !['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol) ||
+      !url.hostname ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      !['/', '/ws', '/ws/'].includes(url.pathname)
+    )
+      throw new Error();
+    url.protocol = url.protocol === 'https:' || url.protocol === 'wss:' ? 'https:' : 'http:';
+    return url.origin;
+  } catch {
+    throw new Error('请填写服务器的 HTTP / HTTPS 地址和端口，不含账号、查询参数或子路径');
+  }
+}
+
+export function getServerAddress(): string {
+  const saved = storage.get<unknown>('park.server', '');
+  try {
+    return typeof saved === 'string' ? normalizeServerAddress(saved) : '';
+  } catch {
+    return '';
+  }
+}
+
+export function setServerAddress(input: string): void {
+  const value = normalizeServerAddress(input);
+  if (value) storage.set('park.server', value);
+  else storage.remove('park.server');
+  if (getServerAddress() !== value) throw new Error('无法保存服务器地址，请检查本机存储权限');
+}
+
+/** 运行时地址优先，其次构建参数，最后与页面同源；显式传空串可测试构建默认值。 */
+export function serverUrl(address = getServerAddress()): string {
+  if (address) {
+    const url = new URL(normalizeServerAddress(address));
+    return `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}/ws`;
+  }
   const fromEnv = import.meta.env.VITE_SERVER_URL as string | undefined;
   if (fromEnv) return fromEnv;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';

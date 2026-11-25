@@ -19,6 +19,9 @@ import type { VirtualCharacter } from '../lib/characters';
 import { figureHeight, findCharacter, useCharacters } from '../lib/characters';
 import { profile, settings } from '../lib/store';
 import type { FeltTheme } from '../lib/store';
+import { online } from '../lib/online';
+import { getServerAddress, serverUrl, setServerAddress } from '../lib/platform';
+import { testServerConnection } from '../lib/serverConnection';
 
 export const FELTS: { value: FeltTheme; label: string; color: string }[] = [
   { value: 'jade', label: '墨绿', color: '#2a6152' },
@@ -174,6 +177,81 @@ function AvatarSection() {
   );
 }
 
+function ServerSection() {
+  const [address, setAddress] = useState(getServerAddress);
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState('');
+  const test = async () => {
+    setTesting(true);
+    setResult('');
+    try {
+      await testServerConnection(address);
+      setResult('连接成功，服务器可用；保存后生效。');
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTesting(false);
+    }
+  };
+  const save = () => {
+    try {
+      setServerAddress(address);
+      if (online.getState().room && online.getState().status === 'open')
+        online.send({ t: 'leave' });
+      online.disconnect();
+      location.reload();
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : String(e));
+    }
+  };
+  return (
+    <div className="field field--stack ai-settings">
+      <div className="field__label">
+        <span>联机服务器</span>
+        <small>联机、邀请链接和服务器默认 AI 共用此地址</small>
+      </div>
+      <label className="ai-input">
+        <span>服务器地址</span>
+        <input
+          value={address}
+          onChange={(e) => {
+            setAddress(e.target.value);
+            setResult('');
+          }}
+          placeholder="http://192.168.2.8:8787"
+          inputMode="url"
+          autoCapitalize="none"
+          autoComplete="off"
+          spellCheck={false}
+          disabled={testing}
+        />
+      </label>
+      <div className="ai-row">
+        <Button size="sm" onClick={test} disabled={testing}>
+          {testing ? '测试中…' : '测试服务器'}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={save}
+          disabled={testing || address === getServerAddress()}
+        >
+          保存并刷新
+        </Button>
+      </div>
+      {result && (
+        <p className="field__note" role="status">
+          {result}
+        </p>
+      )}
+      <p className="field__note">
+        当前联机地址：{serverUrl()}。留空恢复安装包预设；没有预设时仍可单人游戏。
+        保存会关闭旧连接并刷新，保留本机单人存档和个人 AI 配置。好友需连接同一服务器。
+      </p>
+    </div>
+  );
+}
+
 /** AI 人机：服务器默认模型与本机自定义接口。 */
 function AiSection() {
   const a = aiSettings.use();
@@ -317,6 +395,7 @@ export function SettingsSheet({
     <Sheet open={open} onClose={onClose} title={showProfile ? '设置' : '外观'}>
       {showProfile && (
         <>
+          <ServerSection />
           <Field label="昵称" hint="联机时其他玩家看到的名字">
             <NameEditor />
           </Field>

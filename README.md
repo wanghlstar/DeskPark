@@ -146,8 +146,9 @@ docker compose pull && docker compose up -d     # 打开 http://服务器IP:8787
 
 每次推送 main，GitHub Actions 的 **Android** 工作流用 Capacitor 打包 APK（在该次运行的 Artifacts 里下载 `deskpark-android`；推送 `v*` 标签时附在 Release 上）。网页按 Chrome 80 兼容构建，Android 系统 WebView 80 以上即可打开；更旧的手机请在应用商店更新「Android System WebView」。
 
-- 配置线上网页地址后，启动时探测服务器：联网就打开线上最新版本（新游戏随 Docker 更新自动生效，不用重装），连不上就进入 APK 内置的离线版，单人照常可玩。
-- 在仓库 Variables 设置 `ANDROID_PUBLIC_URL`（如 `https://game.example.com/`）和 `ANDROID_SERVER_URL`（如 `wss://game.example.com/ws`），或手动运行工作流时填写；未配置时使用内置的单人版本。APK 的导航域名随网页地址设置。
+- 安装后在 **大厅 → 设置 → 联机服务器** 填写地址（如 `http://192.168.2.8:8787`，端口用飞牛安装时的设置），测试服务器后「保存并刷新」。无需重新打包；联机、邀请链接、服务器默认 AI 与自定义 AI 转发统一使用该服务。
+- 支持 HTTP / HTTPS、IP 与端口，也可粘贴 `ws://…/ws` 或 `wss://…/ws`。地址只保存在本机；更换后刷新并关闭旧连接，保留单人存档和个人 AI 配置。好友需连接同一服务器。
+- 留空恢复构建预设；没有预设时使用内置单人版。仍可在仓库 Variables 设置 `ANDROID_PUBLIC_URL` 和 `ANDROID_SERVER_URL`：未自选服务器时保留原有远程网页探测；自选后使用内置页面连接所选服务器。
 - 语音报牌使用手机的「文字转语音」引擎（需支持中文）。
 - 本地生成测试包的步骤见 [Android APK 打包指南](https://github.com/wanghlstar/DeskPark/blob/main/docs/ANDROID_APK.md)。
 

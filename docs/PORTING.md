@@ -12,7 +12,7 @@ cd apps/web/android
 ./gradlew assembleDebug
 ```
 
-调试 APK 位于 `apps/web/android/app/build/outputs/apk/debug/app-debug.apk`。无服务器时可测试单人模式；需要联机时，在同步前为构建命令设置 `VITE_SERVER_URL=wss://你的域名/ws`。调试签名和测试应用 ID 不用于正式发布。
+调试 APK 位于 `apps/web/android/app/build/outputs/apk/debug/app-debug.apk`。无服务器时可测试单人模式；需要联机时，在大厅「设置 → 联机服务器」填写地址即可，也可用 `VITE_SERVER_URL=wss://你的域名/ws` 提供构建默认值。调试签名和测试应用 ID 不用于正式发布。
 
 项目从一开始就按「引擎与界面分离、平台能力集中」的方式组织，移植 App 有两条路线，可以先后进行。
 
@@ -24,7 +24,7 @@ cd apps/web/android
 | 联机协议独立成包，任何客户端都可复用                                                                 | `packages/protocol`                    |
 | 平台能力集中在一个文件（存储、服务器地址、震动、剪贴板、随机 token）                                 | `apps/web/src/lib/platform.ts`         |
 | 设计令牌集中定义                                                                                     | `apps/web/src/styles/tokens.css`       |
-| 服务器地址可通过 `VITE_SERVER_URL` 配置                                                              | 构建环境变量                           |
+| 服务器地址可在大厅设置中填写，支持构建默认值 `VITE_SERVER_URL`                                       | `platform.ts` / 设置界面               |
 | 视口适配：安全区（刘海屏）、横竖屏、触摸拖选、禁止缩放                                               | 全局样式 / `index.html`                |
 | PWA manifest：手机浏览器可「添加到主屏幕」                                                           | `apps/web/public/manifest.webmanifest` |
 

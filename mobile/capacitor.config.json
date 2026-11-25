@@ -3,9 +3,11 @@
   "appName": "闲亭",
   "webDir": "../apps/web/dist",
   "android": {
-    "backgroundColor": "#f4f1ea"
+    "backgroundColor": "#f4f1ea",
+    "allowMixedContent": true
   },
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "cleartext": true
   }
 }
