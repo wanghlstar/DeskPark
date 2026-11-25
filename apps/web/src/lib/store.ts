@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { AVATARS } from '@park/protocol';
+import type { BotPace } from '@park/protocol';
 import { randomToken, storage } from './platform';
 
 /** 极简的可订阅存储（无需额外状态库），带本地持久化。 */
@@ -30,6 +31,10 @@ export interface Settings {
   felt: FeltTheme;
   fourColor: boolean;
   sound: boolean;
+  speech: boolean;
+  speechVoice: string;
+  speechRate: number;
+  botPace: BotPace;
   music: boolean;
   musicVolume: number;
   theme: ColorTheme;
@@ -48,6 +53,10 @@ export const settings = createStore<Settings>('park.settings', {
   felt: 'jade',
   fourColor: false,
   sound: true,
+  speech: true,
+  speechVoice: '',
+  speechRate: 1.05,
+  botPace: 'normal',
   music: true,
   musicVolume: 0.2,
   theme: 'system',

@@ -11,7 +11,7 @@ import { online, useOnline } from '../lib/online';
 import { copyText, serverUrl } from '../lib/platform';
 import { inviteText, navigate } from '../lib/router';
 import { profile } from '../lib/store';
-import { OptionsForm, PlayerCountField } from './SetupSheet';
+import { OptionsForm, PaceField, PlayerCountField } from './SetupSheet';
 import { TableShell } from './TableShell';
 import './room.css';
 
@@ -268,6 +268,11 @@ function WaitingRoom() {
           options={room.options}
           disabled={!isHost}
           onChange={(o) => online.send({ t: 'configure', options: o })}
+        />
+        <PaceField
+          value={room.pace ?? 'normal'}
+          disabled={!isHost}
+          onChange={(pace) => online.send({ t: 'configure', pace })}
         />
       </section>
 

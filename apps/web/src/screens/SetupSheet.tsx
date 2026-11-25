@@ -1,9 +1,27 @@
 import type { AnyGame, OptionField } from '@park/engine';
 import { getGame, normalizeOptions } from '@park/engine';
+import { BOT_PACES } from '@park/protocol';
+import type { BotPace } from '@park/protocol';
 import { useState } from 'react';
 import { Button, Field, Segmented, Sheet, Switch } from '../components/ui';
 import { online } from '../lib/online';
-import { lastSetup } from '../lib/store';
+import { lastSetup, settings } from '../lib/store';
+
+export function PaceField({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: BotPace;
+  onChange: (value: BotPace) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Field label="对局节奏" hint="调整电脑和托管的等待；真人操作时限不变">
+      <Segmented value={value} onChange={onChange} disabled={disabled} options={[...BOT_PACES]} />
+    </Field>
+  );
+}
 
 /** 根据玩法声明的 optionFields 自动生成设置表单 */
 export function OptionsForm({
@@ -81,15 +99,17 @@ export function SetupSheet({
   const def = getGame(gameId)!;
   const saved = lastSetup.get()[gameId];
   const [players, setPlayers] = useState(saved?.players ?? def.meta.defaultPlayers);
+  const [pace, setPace] = useState(settings.get().botPace);
   const [options, setOptions] = useState<Record<string, unknown>>(() =>
     normalizeOptions(def, saved?.options),
   );
 
   const start = () => {
     lastSetup.set({ [gameId]: { players, options } });
+    settings.set({ botPace: pace });
     if (mode === 'online') {
       online.connect();
-      online.send({ t: 'create', gameId, options, seats: players });
+      online.send({ t: 'create', gameId, options, seats: players, pace });
     }
     onStart();
     onClose();
@@ -108,6 +128,7 @@ export function SetupSheet({
       }
     >
       <PlayerCountField def={def} value={players} onChange={setPlayers} />
+      <PaceField value={pace} onChange={setPace} />
       <OptionsForm def={def} options={options} onChange={setOptions} />
       {mode === 'online' && (
         <p className="setup-note">

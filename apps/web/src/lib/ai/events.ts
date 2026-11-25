@@ -1,3 +1,6 @@
+import { speak, stopSpeech } from '../speech';
+import { aiSettings } from './settings';
+
 /** AI 人机产生的事件：发言、出错、需要先配置 */
 export type AiEvent =
   | { type: 'say'; seat: number; text: string }
@@ -32,6 +35,7 @@ export const aiSpeech = {
     };
   },
   say(seat: number, text: string) {
+    if (aiSettings.get().readAloud) speak(text, { interrupt: false });
     const at = Date.now();
     speech = { ...speech, [seat]: { text, at } };
     speechListeners.forEach((l) => l());
@@ -44,6 +48,7 @@ export const aiSpeech = {
     }, SPEECH_MS);
   },
   clear() {
+    stopSpeech();
     speech = {};
     speechListeners.forEach((l) => l());
   },

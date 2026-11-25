@@ -12,6 +12,7 @@ import { doudizhu } from './games/doudizhu';
 import { gemguild } from './games/gemguild';
 import { gomoku } from './games/gomoku';
 import { paodekuai } from './games/paodekuai';
+import { zhuoheia } from './games/zhuoheia';
 import { reversi } from './games/reversi';
 import { guandan } from './games/guandan';
 import { hexisle } from './games/hexisle';
@@ -38,6 +39,7 @@ export * as hi from './games/hexisle';
 export * as gg from './games/gemguild';
 export * as gm from './games/gomoku';
 export * as pdk from './games/paodekuai';
+export * as ha from './games/zhuoheia';
 export * as rv from './games/reversi';
 export * as ch from './games/chess';
 export * as xq from './games/xiangqi';
@@ -47,6 +49,7 @@ export * as mj from './mahjong';
 export {
   doudizhu,
   paodekuai,
+  zhuoheia,
   guandan,
   shuangsheng,
   texas,
@@ -69,6 +72,7 @@ export {
 for (const g of [
   doudizhu,
   paodekuai,
+  zhuoheia,
   guandan,
   shuangsheng,
   texas,

@@ -22,6 +22,8 @@ export interface TableConfig {
   humanTimeoutMs?: number | null;
   /** 托管 / 离线玩家的代打延迟 */
   autoDelayMs?: number;
+  /** 电脑与托管的等待倍率；不影响真人时限或规则响应窗口。 */
+  botDelayScale?: number;
   /** 便于测试：关闭所有定时器，由调用方手动推进 */
   manual?: boolean;
   seed?: number;
@@ -48,6 +50,8 @@ export interface LastAction {
 }
 
 type Listener = () => void;
+const delayScale = (n: number | undefined) =>
+  Number.isFinite(n) ? Math.max(0.5, Math.min(2, n!)) : 1;
 
 /**
  * 牌桌运行器：持有一局游戏的状态，负责校验/应用动作、调度电脑玩家与超时。
@@ -72,6 +76,7 @@ export class Table<G extends AnyGame = AnyGame> {
   private thinkingToken = new Map<Seat, number>();
   private thinkingCancel = new Map<Seat, () => void>();
   private tokenSeq = 0;
+  private botDelayScale = 1;
 
   constructor(
     public readonly def: G,
@@ -79,6 +84,7 @@ export class Table<G extends AnyGame = AnyGame> {
     public readonly options: Parameters<G['setup']>[0]['options'],
     private readonly config: TableConfig = {},
   ) {
+    this.botDelayScale = delayScale(config.botDelayScale);
     const seed = config.seed ?? randomSeed();
     this.state =
       (config.initialState as ReturnType<G['setup']>) ??
@@ -167,6 +173,15 @@ export class Table<G extends AnyGame = AnyGame> {
     this.clearSeatTimer(seat);
     this.schedule(null);
     this.emit();
+  }
+
+  setBotDelayScale(value: number): void {
+    const scale = delayScale(value);
+    if (scale === this.botDelayScale) return;
+    this.botDelayScale = scale;
+    for (const seat of this.seatTimers.keys())
+      if (this.isAutomated(seat)) this.clearSeatTimer(seat);
+    this.schedule(null, true);
   }
 
   /**
@@ -269,11 +284,13 @@ export class Table<G extends AnyGame = AnyGame> {
    * 重新调度定时器。actedSeat 是刚刚行动的座位，它的计时需要重置；
    * 其他仍处于行动中的座位保留原计时（例如多人同时"准备"的阶段）。
    */
-  private schedule(actedSeat: Seat | null): void {
+  private schedule(actedSeat: Seat | null, keepSystemTimer = false): void {
     if (this.config.manual || this.disposed || !this.running) return;
     if (actedSeat !== null) this.clearSeatTimer(actedSeat);
-    if (this.systemTimer) clearTimer(this.systemTimer);
-    this.systemTimer = null;
+    if (!keepSystemTimer) {
+      if (this.systemTimer) clearTimer(this.systemTimer);
+      this.systemTimer = null;
+    }
 
     if (this.def.isOver(this.state)) {
       for (const seat of [...this.seatTimers.keys()]) this.clearSeatTimer(seat);
@@ -286,7 +303,7 @@ export class Table<G extends AnyGame = AnyGame> {
     }
 
     const auto = this.def.autoAdvance?.(this.state);
-    if (auto) {
+    if (auto && !this.systemTimer) {
       const version = this.version;
       this.systemTimer = setTimer(() => {
         if (this.version === version) this.act(SYSTEM_SEAT, auto.action);
@@ -300,9 +317,9 @@ export class Table<G extends AnyGame = AnyGame> {
         const s = this.seats[seat];
         if (s?.isBot) {
           const [lo, hi] = this.def.meta.botDelayMs ?? [600, 1200];
-          delay = lo + Math.random() * (hi - lo);
+          delay = (lo + Math.random() * (hi - lo)) * this.botDelayScale;
         } else {
-          delay = this.config.autoDelayMs ?? 700;
+          delay = (this.config.autoDelayMs ?? 700) * this.botDelayScale;
         }
       } else if (this.config.humanTimeoutMs) {
         delay = this.config.humanTimeoutMs;

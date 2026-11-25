@@ -17,6 +17,8 @@ export interface AiSettings {
   model: string;
   /** 发言频率：0 不说话 · 1 偶尔 · 2 适中 · 3 话痨 */
   chat: 0 | 1 | 2 | 3;
+  /** 将 AI 的文字发言交给系统语音朗读，音色与报牌共用。 */
+  readAloud: boolean;
   /** 经本站服务器转发（解决跨域） */
   proxy: boolean;
 }
@@ -27,6 +29,7 @@ export const aiSettings = createStore<AiSettings>('park.ai', {
   apiKey: '',
   model: '',
   chat: 1,
+  readAloud: true,
   proxy: false,
 });
 
@@ -121,4 +124,4 @@ export function aiReady(s: AiSettings = aiSettings.get()): boolean {
 }
 
 /** 每次决策时顺便发言的概率 */
-export const CHAT_RATE = [0, 0.12, 0.25, 0.45] as const;
+export const CHAT_RATE = [0, 0.2, 0.55, 1] as const;

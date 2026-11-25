@@ -1092,7 +1092,8 @@
   font-size: 13.5px;
   color: var(--ink-2);
 }
-.ai-input input {
+.ai-input input,
+.ai-input select {
   min-width: 0;
   height: 36px;
   padding: 0 12px;
@@ -1105,7 +1106,8 @@
   font-size: 14px;
   font-family: var(--font-mono, ui-monospace, monospace);
 }
-.ai-input input:focus {
+.ai-input input:focus,
+.ai-input select:focus {
   box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 .ai-input input::placeholder {

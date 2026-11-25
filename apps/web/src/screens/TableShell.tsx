@@ -23,6 +23,7 @@ import { characterName } from '../lib/ai/turn';
 import type { GameController } from '../lib/controller';
 import { online, useOnline } from '../lib/online';
 import { playSound } from '../lib/sound';
+import { stopSpeech } from '../lib/speech';
 import { settings } from '../lib/store';
 import { SettingsSheet } from './SettingsSheet';
 
@@ -118,7 +119,7 @@ export function TableShell({
     return aiEvents.on((e) => {
       if (e.type === 'say') pushLocal(e.seat, e.text);
       else if (e.type === 'needConfig') {
-        toast('先在「外观 → AI 人机」里填写接口地址和 Key');
+        toast('先在「外观 → AI 人机」选择服务器默认模型，或填写自定义模型');
         setLook(true);
       } else if (e.type === 'error' && Date.now() - lastErr.current > 20_000) {
         lastErr.current = Date.now();
@@ -198,7 +199,10 @@ export function TableShell({
           )}
           <IconButton
             label={s.sound ? '关闭音效' : '开启音效'}
-            onClick={() => settings.set({ sound: !s.sound })}
+            onClick={() => {
+              settings.set({ sound: !s.sound });
+              if (s.sound) stopSpeech();
+            }}
           >
             {s.sound ? <Volume2 size={19} /> : <VolumeX size={19} />}
           </IconButton>

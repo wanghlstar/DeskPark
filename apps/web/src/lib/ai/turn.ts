@@ -1,5 +1,7 @@
 import type { DelegateContext, Table } from '@park/engine';
 import { Rng, randomSeed } from '@park/engine';
+import { getBotPace } from '@park/protocol';
+import { settings } from '../store';
 import { getCharacter } from '../../components/pixel/characters';
 import { charactersNow, findCharacter } from '../characters';
 import { decide } from './agent';
@@ -30,9 +32,16 @@ export function aiTurn(table: Table, seat: number, ctx: DelegateContext): Promis
   const ctrl = new AbortController();
   ctx.onCancel(() => ctrl.abort());
   const persona = { name: s.name, character: characterName(s.avatar) };
-  return decide(prompt, table.def.meta.name, persona, wantSay, ctrl.signal).then(
+  return decide(
+    prompt,
+    table.def.meta.name,
+    persona,
+    wantSay,
+    ctrl.signal,
+    getBotPace(settings.get().botPace).aiTimeoutMs,
+  ).then(
     ({ index, say }) => {
-      if (say) {
+      if (wantSay && say) {
         aiSpeech.say(seat, say);
         aiEvents.emit({ type: 'say', seat, text: say });
       }

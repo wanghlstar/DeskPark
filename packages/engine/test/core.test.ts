@@ -17,6 +17,7 @@ describe('基础设施', () => {
     expect(ids).toEqual([
       'doudizhu',
       'paodekuai',
+      'zhuoheia',
       'guandan',
       'shuangsheng',
       'texas',

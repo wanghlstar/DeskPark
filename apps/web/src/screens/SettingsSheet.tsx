@@ -23,6 +23,9 @@ import { online } from '../lib/online';
 import { getServerAddress, serverUrl, setServerAddress } from '../lib/platform';
 import { testServerConnection } from '../lib/serverConnection';
 import { unlockBackgroundMusic } from '../lib/music';
+import { loadSpeechVoices, speak, stopSpeech } from '../lib/speech';
+import type { SpeechVoice } from '../lib/speech';
+import { PaceField } from './SetupSheet';
 
 export const FELTS: { value: FeltTheme; label: string; color: string }[] = [
   { value: 'jade', label: '墨绿', color: '#2a6152' },
@@ -253,6 +256,74 @@ function ServerSection() {
   );
 }
 
+function SpeechSection() {
+  const s = settings.use();
+  const [voices, setVoices] = useState<SpeechVoice[]>([]);
+  useEffect(() => {
+    let active = true;
+    const refresh = () =>
+      void loadSpeechVoices().then((v) => {
+        if (active) setVoices(v);
+      });
+    refresh();
+    window.speechSynthesis?.addEventListener('voiceschanged', refresh);
+    return () => {
+      active = false;
+      window.speechSynthesis?.removeEventListener('voiceschanged', refresh);
+    };
+  }, []);
+  return (
+    <div className="field field--stack ai-settings">
+      <div className="ai-row">
+        <span>
+          报牌语音<small>音色使用当前设备的中文语音，优先本地普通话</small>
+        </span>
+        <Switch
+          checked={s.speech}
+          onChange={(speech) => {
+            settings.set({ speech });
+            if (!speech) stopSpeech();
+          }}
+        />
+      </div>
+      <label className="ai-input">
+        <span>中文音色</span>
+        <select
+          value={voices.some((v) => v.id === s.speechVoice) ? s.speechVoice : ''}
+          onChange={(e) => settings.set({ speechVoice: e.target.value })}
+        >
+          <option value="">系统推荐 · 优先本地普通话</option>
+          {voices.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name} · {v.local ? '本地' : '联网'}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Field label="语音速度" hint={`${s.speechRate.toFixed(2)} 倍`}>
+        <input
+          className="music-volume"
+          type="range"
+          aria-label="语音速度"
+          min="0.75"
+          max="1.5"
+          step="0.05"
+          value={s.speechRate}
+          onChange={(e) => settings.set({ speechRate: Number(e.target.value) })}
+        />
+      </Field>
+      <Button size="sm" onClick={() => speak('你好，该你出牌了。黑桃A，最大！', { preview: true })}>
+        试听音色
+      </Button>
+      {!voices.length && (
+        <p className="field__note">
+          中文音色由设备提供；若试听无声，请在系统的文字转语音设置中安装中文语音包。
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** AI 人机：服务器默认模型与本机自定义接口。 */
 function AiSection() {
   const a = aiSettings.use();
@@ -354,7 +425,7 @@ function AiSection() {
         </>
       )}
       <div className="ai-row">
-        <span>发言</span>
+        <span>出牌发言</span>
         <Segmented<number>
           value={a.chat}
           onChange={(chat) => aiSettings.set({ chat: chat as 0 | 1 | 2 | 3 })}
@@ -364,6 +435,22 @@ function AiSection() {
             { value: 2, label: '适中' },
             { value: 3, label: '话痨' },
           ]}
+        />
+      </div>
+      <p className="field__note">
+        仅单人局已点亮 ✨ 的电脑会调用模型；「话痨」每次模型思考都请求一句话。
+        只有一种合法动作时直接出牌，减少等待。联机电脑目前使用内置策略。
+      </p>
+      <div className="ai-row">
+        <span>
+          AI 发言朗读<small>使用下面选择的中文音色和语速；关闭后仍显示文字气泡</small>
+        </span>
+        <Switch
+          checked={a.readAloud}
+          onChange={(readAloud) => {
+            aiSettings.set({ readAloud });
+            if (!readAloud) stopSpeech();
+          }}
         />
       </div>
       <Button variant="secondary" size="sm" onClick={test} disabled={testing || !aiReady(a)}>
@@ -404,6 +491,11 @@ export function SettingsSheet({
         </>
       )}
       <AiSection />
+      <PaceField value={s.botPace} onChange={(botPace) => settings.set({ botPace })} />
+      <p className="field__note">
+        这里调整单人节奏；联机由房主在开局前统一设置。快速节奏下模型最多等待 12
+        秒，超时由内置电脑代打。
+      </p>
       <Field label="桌布">
         <div className="felt-picker">
           {FELTS.map((f) => (
@@ -434,8 +526,15 @@ export function SettingsSheet({
         <Switch checked={s.mjCoachMc} onChange={(v) => settings.set({ mjCoachMc: v })} />
       </Field>
       <Field label="音效">
-        <Switch checked={s.sound} onChange={(v) => settings.set({ sound: v })} />
+        <Switch
+          checked={s.sound}
+          onChange={(sound) => {
+            settings.set({ sound });
+            if (!sound) stopSpeech();
+          }}
+        />
       </Field>
+      <SpeechSection />
       <Field label="背景音乐" hint="原创小曲，随玩法切换；切到后台暂停">
         <Switch
           checked={s.music}

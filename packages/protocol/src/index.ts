@@ -5,6 +5,15 @@
 
 export const PROTOCOL_VERSION = 1;
 
+export const BOT_PACES = [
+  { value: 'relaxed', label: '舒缓', delayScale: 1.4, aiTimeoutMs: 40_000 },
+  { value: 'normal', label: '标准', delayScale: 1, aiTimeoutMs: 25_000 },
+  { value: 'fast', label: '快速', delayScale: 0.55, aiTimeoutMs: 12_000 },
+] as const;
+export type BotPace = (typeof BOT_PACES)[number]['value'];
+export const getBotPace = (value: unknown) =>
+  BOT_PACES.find((p) => p.value === value) ?? BOT_PACES[1];
+
 export type SeatKind = 'empty' | 'human' | 'bot';
 
 export interface SeatInfo {
@@ -31,6 +40,8 @@ export interface RoomSnapshot {
   spectators: number;
   /** 当前对局序号，每次开局 +1 */
   matchNo: number;
+  /** 可选以兼容旧客户端；省略时为标准节奏。 */
+  pace?: BotPace;
 }
 
 /** 房间聊天消息（服务器分配 id 与时间） */
@@ -91,13 +102,19 @@ export function cleanPlayerName(input: unknown): string {
 
 export type ClientMessage =
   | { t: 'hello'; token: string; name: string; avatar?: string; v: number }
-  | { t: 'create'; gameId: string; options?: Record<string, unknown>; seats?: number }
+  | {
+      t: 'create';
+      gameId: string;
+      options?: Record<string, unknown>;
+      seats?: number;
+      pace?: BotPace;
+    }
   | { t: 'join'; code: string }
   | { t: 'leave' }
   | { t: 'rename'; name: string; avatar?: string }
   | { t: 'sit'; seat: number }
   | { t: 'bot'; seat: number; add: boolean }
-  | { t: 'configure'; options?: Record<string, unknown>; seats?: number }
+  | { t: 'configure'; options?: Record<string, unknown>; seats?: number; pace?: BotPace }
   | { t: 'start' }
   | { t: 'act'; action: unknown }
   | { t: 'auto'; on: boolean }

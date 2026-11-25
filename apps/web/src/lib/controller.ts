@@ -1,6 +1,6 @@
 import type { AnyGame, TableSeat } from '@park/engine';
 import { Table, getGame } from '@park/engine';
-import { AVATARS } from '@park/protocol';
+import { AVATARS, getBotPace } from '@park/protocol';
 import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react';
 import { aiEvents, aiSpeech } from './ai/events';
 import { aiReady } from './ai/settings';
@@ -8,7 +8,7 @@ import { aiCapable, aiTurn } from './ai/turn';
 import { online, useOnline } from './online';
 import { storage } from './platform';
 import { navigate } from './router';
-import { profile } from './store';
+import { profile, settings } from './store';
 
 export interface PlayerInfo {
   name: string;
@@ -88,6 +88,7 @@ function makeTable(
   });
   const table: Table = new Table(def, seats, restore?.options ?? options, {
     humanTimeoutMs: null,
+    botDelayScale: getBotPace(settings.get().botPace).delayScale,
     initialState: restore?.state,
     onError: (e) => console.warn('[table]', e),
     delegate: (seat, ctx) => aiTurn(table, seat, ctx),
@@ -131,6 +132,10 @@ export function useLocalController(
   });
   const [tick, bump] = useReducer((x: number) => x + 1, 0);
   const speech = useSyncExternalStore(aiSpeech.subscribe, aiSpeech.get, aiSpeech.get);
+  const pace = settings.use().botPace;
+  useEffect(() => {
+    table?.setBotDelayScale(getBotPace(pace).delayScale);
+  }, [table, pace]);
   useEffect(() => () => aiSpeech.clear(), []);
 
   useEffect(() => {

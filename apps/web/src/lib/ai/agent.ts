@@ -63,6 +63,7 @@ export async function decide(
   persona: Persona,
   wantSay: boolean,
   signal?: AbortSignal,
+  timeoutMs = DECIDE_TIMEOUT_MS,
 ): Promise<{ index: number; say: string }> {
   const list = prompt.options.map((o, i) => `${i + 1}. ${o.label}`).join('\n');
   const sayRule = wantSay
@@ -71,7 +72,7 @@ export async function decide(
   const text = await complete({
     system: systemPrompt(game, persona),
     user: `${prompt.situation}\n\n候选动作：\n${list}\n\n${sayRule}`,
-    signal: withTimeout(DECIDE_TIMEOUT_MS, signal),
+    signal: withTimeout(timeoutMs, signal),
   });
   const d = parseDecision(text, prompt.options.length);
   if (!d) throw new Error('模型没有给出有效的选择');

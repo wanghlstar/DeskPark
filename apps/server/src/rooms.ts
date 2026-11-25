@@ -2,6 +2,7 @@ import type { AnyGame, TableSeat } from '@park/engine';
 import { Table, getGame, normalizeOptions } from '@park/engine';
 import type {
   ChatMessage,
+  BotPace,
   ClientMessage,
   RoomSnapshot,
   SeatInfo,
@@ -18,6 +19,7 @@ import {
   ROOM_CODE_LENGTH,
   isAvatarId,
   normalizeRoomCode,
+  getBotPace,
 } from '@park/protocol';
 import { randomBytes } from 'node:crypto';
 
@@ -91,6 +93,7 @@ class Room {
   chat: ChatMessage[] = [];
   private chatSeq = 0;
   private unsubscribe: (() => void) | null = null;
+  pace: BotPace = 'normal';
 
   constructor(
     readonly hub: Hub,
@@ -130,6 +133,7 @@ class Room {
       })),
       spectators: this.spectators.size,
       matchNo: this.matchNo,
+      pace: this.pace,
     };
   }
 
@@ -208,6 +212,7 @@ class Room {
     }));
     this.table = new Table(this.def, tableSeats, this.options, {
       humanTimeoutMs: Math.max(this.hub.config.turnTimeoutMs, this.def.meta.turnTimeoutMs ?? 0),
+      botDelayScale: getBotPace(this.pace).delayScale,
       onError: (e) => this.hub.config.log?.('[table]', this.code, e),
     });
     this.matchNo++;
@@ -388,6 +393,7 @@ export class Hub {
         );
         const code = this.newCode();
         const r = new Room(this, code, def, normalizeOptions(def, msg.options), seatCount, c.id);
+        r.pace = getBotPace(msg.pace).value;
         r.seats[0] = humanSeat(c);
         this.rooms.set(code, r);
         c.roomCode = code;
@@ -468,6 +474,7 @@ export class Hub {
       case 'configure': {
         if (!isHost) return this.error(c, '只有房主可以修改设置');
         if (!waiting) return this.error(c, '对局进行中');
+        if (msg.pace !== undefined) room.pace = getBotPace(msg.pace).value;
         if (msg.options)
           room.options = normalizeOptions(room.def, { ...room.options, ...msg.options });
         if (msg.seats !== undefined) {
