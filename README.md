@@ -2,13 +2,15 @@
 
 # 闲亭 · DeskPark
 
+原始仓库：[solitern/DeskPark](https://github.com/solitern/DeskPark) · 本仓库：[yeyinghai/DeskPark](https://github.com/yeyinghai/DeskPark)
+
 **简洁优雅的网页桌游平台** —— 斗地主、掼蛋、双升、西游记、德州扑克、四川麻将（血战到底）、河洛杠次、中国象棋、国际象棋、桌游「魔法出包」「UON」「卡旦岛」「宝石商会」，单人练习或与好友联机。<br/>
 打开网页即玩，规则引擎与界面分离，可扩展自定义玩法，并为移植 App 预留了结构。
 
 [![CI](https://github.com/yeyinghai/DeskPark/actions/workflows/ci.yml/badge.svg)](https://github.com/yeyinghai/DeskPark/actions/workflows/ci.yml)
 [![Docker](https://github.com/yeyinghai/DeskPark/actions/workflows/docker.yml/badge.svg)](https://github.com/yeyinghai/DeskPark/actions/workflows/docker.yml)
 
-<img src="docs/screenshots/lobby.jpg" alt="大厅" width="860" />
+<img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/lobby.jpg" alt="大厅" width="860" />
 
 </div>
 
@@ -69,22 +71,22 @@
 - **房间聊天**：等待房间与对局中都能聊天，支持快捷语、未读提醒与消息浮窗；另有表情互动。
 - **单人 & 多人**：单人与电脑对战（规则 AI，德州使用蒙特卡洛胜率估算；也可唤醒大模型接管）；联机输入 4 位房间号或分享链接即可加入，空位由电脑补齐。
 - **服务端权威**：联机时规则在服务器运行，每个座位只收到自己能看到的信息，杜绝作弊；断线重连自动恢复座位，离线/超时自动托管。
-- **可扩展玩法**：所有玩法都实现同一个 `GameDefinition` 插件接口，附带示例玩法「比大小」与 [新增玩法指南](docs/ADDING_A_GAME.md)。
+- **可扩展玩法**：所有玩法都实现同一个 `GameDefinition` 插件接口，附带示例玩法「比大小」与 [新增玩法指南](https://github.com/yeyinghai/DeskPark/blob/main/docs/ADDING_A_GAME.md)。
 - **简洁优雅的界面**：统一的设计令牌、自绘矢量花色与卡面、四种桌布、四色牌、深色模式、细腻的动效与合成音效；桌面与横/竖屏手机自适应。
-- **为 App 而设计**：规则引擎纯 TypeScript、无 DOM 依赖；平台相关能力集中在一个适配层，见 [App 移植方案](docs/PORTING.md)。
+- **为 App 而设计**：规则引擎纯 TypeScript、无 DOM 依赖；平台相关能力集中在一个适配层，见 [App 移植方案](https://github.com/yeyinghai/DeskPark/blob/main/docs/PORTING.md)。
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/doudizhu.jpg" alt="斗地主" /></td>
-    <td><img src="docs/screenshots/guandan.jpg" alt="掼蛋" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/doudizhu.jpg" alt="斗地主" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/guandan.jpg" alt="掼蛋" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/texas.jpg" alt="德州扑克" /></td>
-    <td><img src="docs/screenshots/result.jpg" alt="结算" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/texas.jpg" alt="德州扑克" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/result.jpg" alt="结算" /></td>
   </tr>
 </table>
 
-<p align="center"><img src="docs/screenshots/mobile.jpg" alt="手机横屏" width="560" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/mobile.jpg" alt="手机横屏" width="560" /></p>
 
 ## 快速开始
 
@@ -122,7 +124,7 @@ docker compose pull && docker compose up -d     # 打开 http://服务器IP:8787
 
 - 镜像 `ghcr.io/yeyinghai/deskpark`（amd64 / arm64），每次推送 main 自动构建、冒烟测试并发布为 `latest`（新增玩法都合并进 main）。
 - 绑定域名并自动 HTTPS：`docker compose -f docker-compose.yml -f deploy/docker-compose.https.yml up -d`
-- 国内网络、版本回滚、Nginx 反代、不用 Docker 的方式等，见 **[部署指南](docs/DEPLOY.md)**。
+- 国内网络、版本回滚、Nginx 反代、不用 Docker 的方式等，见 **[部署指南](https://github.com/yeyinghai/DeskPark/blob/main/docs/DEPLOY.md)**。
 
 ### Android 应用
 
@@ -146,15 +148,15 @@ docs/          架构、设计、玩法扩展、App 移植、路线图
 
 ## 文档
 
-- [部署指南](docs/DEPLOY.md) —— Docker、HTTPS、云服务器、国内网络
-- [架构说明](docs/ARCHITECTURE.md) —— 分层、数据流、信息隐藏、联机协议
-- [新增 / 自定义玩法](docs/ADDING_A_GAME.md) —— 以「比大小」为例的完整步骤
-- [设计规范](docs/DESIGN.md) —— 设计原则、色彩、字体、卡面、动效
-- [App 移植方案](docs/PORTING.md) —— Capacitor 快速上架与 React Native 原生化路线
-- [路线图](docs/ROADMAP.md) · [更新日志](CHANGELOG.md) · [贡献指南](CONTRIBUTING.md)
+- [部署指南](https://github.com/yeyinghai/DeskPark/blob/main/docs/DEPLOY.md) —— Docker、HTTPS、云服务器、国内网络
+- [架构说明](https://github.com/yeyinghai/DeskPark/blob/main/docs/ARCHITECTURE.md) —— 分层、数据流、信息隐藏、联机协议
+- [新增 / 自定义玩法](https://github.com/yeyinghai/DeskPark/blob/main/docs/ADDING_A_GAME.md) —— 以「比大小」为例的完整步骤
+- [设计规范](https://github.com/yeyinghai/DeskPark/blob/main/docs/DESIGN.md) —— 设计原则、色彩、字体、卡面、动效
+- [App 移植方案](https://github.com/yeyinghai/DeskPark/blob/main/docs/PORTING.md) —— Capacitor 快速上架与 React Native 原生化路线
+- [路线图](https://github.com/yeyinghai/DeskPark/blob/main/docs/ROADMAP.md) · [更新日志](https://github.com/yeyinghai/DeskPark/blob/main/CHANGELOG.md) · [贡献指南](https://github.com/yeyinghai/DeskPark/blob/main/CONTRIBUTING.md)
 
 ## 许可
 
-[MIT](LICENSE)
+[MIT](https://github.com/yeyinghai/DeskPark/blob/main/LICENSE)
 
 导师模式随附的棋类引擎是独立的第三方程序，按各自的许可证分发：[Stockfish](https://github.com/official-stockfish/Stockfish)（`apps/web/public/engines/stockfish/`，来自 npm 包 `stockfish@19.0.1`）与 [Fairy-Stockfish](https://github.com/fairy-stockfish/Fairy-Stockfish)（`apps/web/public/engines/fairy/`，来自 npm 包 `fairy-stockfish-nnue.wasm@1.1.12`），均为 GPL-3.0，许可证全文见各目录下的 `COPYING.txt`。
