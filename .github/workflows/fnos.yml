@@ -1,0 +1,54 @@
+name: fnOS FPK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: fnos-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fpk:
+    name: Check · Build · Package FPK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install and check
+        run: |
+          npm ci
+          npm run format:check
+          npm run check
+          bash -n packaging/fnos/cmd/main
+
+      - name: Install fnpack
+        run: |
+          mkdir -p "$RUNNER_TEMP/fnpack-bin"
+          curl --fail --location --retry 3 \
+            https://static2.fnnas.com/fnpack/fnpack-1.3.3-linux-amd64 \
+            --output "$RUNNER_TEMP/fnpack-bin/fnpack"
+          chmod +x "$RUNNER_TEMP/fnpack-bin/fnpack"
+          echo "$RUNNER_TEMP/fnpack-bin" >> "$GITHUB_PATH"
+
+      - name: Build and test FPK
+        run: npm run build:fpk
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deskpark-fnos
+          path: |
+            dist/fnos/*.fpk
+            dist/fnos/*.sha256
+          if-no-files-found: error

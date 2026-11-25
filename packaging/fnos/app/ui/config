@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "deskpark.main": {
+      "title": "闲亭 DeskPark",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "8787",
+      "url": "/",
+      "allUsers": true
+    }
+  }
+}

@@ -1,0 +1,17 @@
+appname=deskpark
+version=0.3.0
+display_name=闲亭 DeskPark
+desc=网页桌游平台，支持扑克、麻将、棋类等玩法，可单人练习或与好友联机。
+platform=all
+source=thirdparty
+maintainer=wanghlstar
+maintainer_url=https://github.com/wanghlstar/DeskPark
+distributor=wanghlstar
+distributor_url=https://github.com/wanghlstar/DeskPark
+desktop_uidir=ui
+desktop_applaunchname=deskpark.main
+install_dep_apps=nodejs_v22
+ctl_stop=true
+service_port=8787
+checkport=true
+disable_authorization_path=true

@@ -1,0 +1,84 @@
+#!/bin/bash
+
+export PATH="/var/apps/nodejs_v22/target/bin:$PATH"
+SERVER="${TRIM_APPDEST:?}/server.mjs"
+PID_FILE="${TRIM_PKGVAR:?}/deskpark.pid"
+LOG_FILE="${TRIM_PKGVAR}/deskpark.log"
+
+fail() {
+    printf '%s\n' "$1" >&2
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        printf '%s\n' "$1" > "$TRIM_TEMP_LOGFILE"
+    fi
+    return 1
+}
+
+is_running() {
+    [ -s "$PID_FILE" ] || return 1
+    pid=$(< "$PID_FILE")
+    case "$pid" in ''|*[!0-9]*) return 1 ;; esac
+    [ "$pid" -gt 1 ] 2>/dev/null || return 1
+    kill -0 "$pid" 2>/dev/null || return 1
+    # PID 可能过期并被其他服务复用，发送信号前核对应用路径。
+    case "$(ps -p "$pid" -o args= 2>/dev/null)" in
+        *"$SERVER"*) ;;
+        *) return 1 ;;
+    esac
+    case "$(ps -p "$pid" -o stat= 2>/dev/null)" in
+        *Z*) return 1 ;;
+    esac
+}
+
+stop_service() {
+    if is_running; then
+        kill -TERM "$pid" 2>/dev/null || true
+        for ((attempt=0; attempt<50; attempt++)); do
+            is_running || break
+            sleep 0.1
+        done
+        if is_running; then
+            kill -KILL "$pid" 2>/dev/null || true
+        fi
+    fi
+    rm -f "$PID_FILE"
+}
+
+start_service() {
+    is_running && return 0
+    mkdir -p "$TRIM_PKGVAR" || return 1
+    [ -f "$SERVER" ] || { fail '缺少 DeskPark 服务文件，请重新安装应用。'; return 1; }
+    command -v node >/dev/null || { fail '未找到 Node.js，请安装飞牛 Node.js 22 运行时。'; return 1; }
+    export NODE_ENV=production HOST=0.0.0.0
+    export PORT="${TRIM_SERVICE_PORT:-8787}" STATIC_DIR="${TRIM_APPDEST}/web"
+    if ! node --input-type=module -e '
+        import net from "node:net";
+        const server = net.createServer();
+        server.on("error", () => process.exit(1));
+        server.listen(Number(process.env.PORT), "0.0.0.0", () => server.close());
+    ' >> "$LOG_FILE" 2>&1; then
+        fail "服务端口 $PORT 不可用，请检查是否被其他应用占用。"
+        return 1
+    fi
+    nohup node "$SERVER" >> "$LOG_FILE" 2>&1 < /dev/null &
+    pid=$!
+    printf '%s\n' "$pid" > "$PID_FILE"
+    for ((attempt=0; attempt<10; attempt++)); do
+        is_running || break
+        if node -e '
+            fetch("http://127.0.0.1:" + process.env.PORT + "/healthz", { signal: AbortSignal.timeout(500) })
+                .then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1));
+        ' >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 0.2
+    done
+    stop_service
+    fail "DeskPark 启动失败，请查看 $LOG_FILE。"
+}
+
+case "${1:-}" in
+    start) start_service ;;
+    stop) stop_service ;;
+    status) if is_running; then exit 0; else exit 3; fi ;;
+    *) fail '不支持的操作。' ;;
+esac
