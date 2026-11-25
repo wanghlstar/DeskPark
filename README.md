@@ -5,7 +5,7 @@
 原始仓库：[solitern/DeskPark](https://github.com/solitern/DeskPark) · 本仓库：[wanghlstar/DeskPark](https://github.com/wanghlstar/DeskPark)<br/>
 合并来源：[Aertox/DeskPark](https://github.com/Aertox/DeskPark) · [yeyinghai/DeskPark](https://github.com/yeyinghai/DeskPark)
 
-**简洁优雅的网页桌游平台** —— 斗地主、掼蛋、双升、西游记、德州扑克、普通麻将、四川麻将（血战到底）、河洛杠次、中国象棋、国际象棋、桌游「魔法出包」「UON」「卡旦岛」「宝石商会」，单人练习或与好友联机。<br/>
+**简洁优雅的网页桌游平台** —— 斗地主、跑得快、掼蛋、双升、西游记、德州扑克、普通麻将、四川麻将（血战到底）、河洛杠次、五子棋、黑白棋、中国象棋、国际象棋、桌游「魔法出包」「UON」「卡旦岛」「宝石商会」，单人练习或与好友联机。<br/>
 打开网页即玩，规则引擎与界面分离，可扩展自定义玩法，并为移植 App 预留了结构。
 
 [![CI](https://github.com/wanghlstar/DeskPark/actions/workflows/ci.yml/badge.svg)](https://github.com/wanghlstar/DeskPark/actions/workflows/ci.yml)
@@ -16,6 +16,16 @@
 </div>
 
 ## 新增玩法
+
+### 五子棋 / 跑得快 / 黑白棋
+
+三款均支持单人内置电脑、联机房间和可选的单人 AI 接管，不需要额外部署游戏服务。
+
+- **五子棋**：15×15 自由规则，黑先，横竖斜线至少五子获胜，长连有效、无禁手。三档电脑会成五、防守与搜索，人机局可悔棋，提供落子记录、末手标记和胜利连线。
+- **跑得快**：三人 48 张，每人 16 张，三张 A、一张黑桃 2，无王。黑桃 3 先出且首手包含它；有大必压（含炸弹），领出单张时下家报单必须出最大单张。支持三带任意两张、两连对、顺子、三顺和飞机，不含三带一或四带二。赢家收两家剩牌分，16 张未出者双倍，炸弹不额外计分。提供提示、报单、局末亮牌及多局积分。
+- **黑白棋**：8×8，黑先，八方向夹吃翻转。可落位置有圆点提示，没有合法走法自动让行，双方都不能走则按子数结算。三档电脑考虑角、行动力与终局子数，人机局可悔棋。
+
+单人局点电脑头像旁的 **✨** 可让已配置的大模型从合法候选中决策，失败则回退内置策略；联机电脑仍由服务器内置策略驱动。服务器默认模型和玩家自定义配置均可使用。
 
 ### 普通麻将（136 张基础玩法）
 
@@ -173,5 +183,7 @@ docs/          架构、设计、玩法扩展、App 移植、路线图
 ## 许可
 
 [MIT](https://github.com/wanghlstar/DeskPark/blob/main/LICENSE)
+
+五子棋的棋形评估与搜索移植自 [Minjia-Hu/retro-arcade](https://github.com/Minjia-Hu/retro-arcade)，跑得快的牌型识别与候选生成移植自 [esrrhs/paodekuai_ai](https://github.com/esrrhs/paodekuai_ai)，均为 MIT。完整版权与许可声明分别保留在 `apps/web/public/licenses/retro-arcade.txt`、`apps/web/public/licenses/paodekuai-ai.txt`，随网页、FPK 和 APK 一起分发。黑白棋规则与策略在本项目内独立实现。
 
 导师模式随附的棋类引擎是独立的第三方程序，按各自的许可证分发：[Stockfish](https://github.com/official-stockfish/Stockfish)（`apps/web/public/engines/stockfish/`，来自 npm 包 `stockfish@19.0.1`）与 [Fairy-Stockfish](https://github.com/fairy-stockfish/Fairy-Stockfish)（`apps/web/public/engines/fairy/`，来自 npm 包 `fairy-stockfish-nnue.wasm@1.1.12`），均为 GPL-3.0，许可证全文见各目录下的 `COPYING.txt`。

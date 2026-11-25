@@ -16,6 +16,7 @@ describe('基础设施', () => {
     const ids = listGames().map((g) => g.meta.id);
     expect(ids).toEqual([
       'doudizhu',
+      'paodekuai',
       'guandan',
       'shuangsheng',
       'texas',
@@ -24,6 +25,8 @@ describe('基础设施', () => {
       'heluogangci',
       'xiangqi',
       'chess',
+      'gomoku',
+      'reversi',
       'spellstones',
       'onecard',
       'hexisle',

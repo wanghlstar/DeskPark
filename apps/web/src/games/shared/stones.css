@@ -1,0 +1,150 @@
+.stones-layout {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(220px, 26vw, 320px);
+  gap: 20px;
+  padding: 10px max(16px, 3vw) 14px;
+}
+.stones-well {
+  min-width: 0;
+  min-height: 0;
+}
+.stones-board {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+.stones-wood {
+  fill: #d5b17a;
+  stroke: #8d683a;
+  stroke-width: 0.1;
+}
+.stones-line {
+  stroke: #896639;
+  stroke-width: 0.035;
+}
+.stones-coord {
+  font: 0.22px var(--font-ui);
+  fill: #634b30;
+  text-anchor: middle;
+}
+.stone {
+  stroke: rgba(0, 0, 0, 0.22);
+  stroke-width: 0.025;
+  pointer-events: none;
+}
+.stone.is-winning {
+  stroke: var(--danger);
+  stroke-width: 0.09;
+}
+.stone-preview {
+  fill: #474b40;
+  opacity: 0;
+  pointer-events: none;
+}
+.stone-cell.is-legal {
+  cursor: pointer;
+}
+.stone-cell.is-legal:hover .stone-preview,
+.stone-cell.is-legal:focus .stone-preview {
+  opacity: 0.35;
+}
+.stone-cell:focus {
+  outline: none;
+}
+.stone-cell:focus-visible > rect {
+  stroke: var(--accent);
+  stroke-width: 0.06;
+}
+.stone-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #252b2d;
+  border: 1px solid #6e7474;
+}
+.stone-swatch.is-2 {
+  background: var(--paper);
+}
+.is-reversi .stones-wood {
+  fill: #356e58;
+  stroke: #a5b78c;
+}
+.is-reversi .stones-line {
+  stroke: #173e31;
+  stroke-width: 0.035;
+}
+.is-reversi .stones-coord {
+  fill: #dbe7ce;
+}
+.is-reversi .stone-preview {
+  fill: #d2e3b8;
+  opacity: 0.5;
+}
+.stones-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--felt-ink);
+}
+.stones-count > span {
+  color: var(--felt-ink-3);
+}
+.stones-count small {
+  width: 100%;
+  text-align: center;
+  color: var(--felt-accent);
+  font-size: 12px;
+}
+.stones-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+@media (max-height: 500px) {
+  .stones-layout {
+    gap: 10px;
+    padding: 4px 12px;
+  }
+  .stones-side {
+    gap: 5px;
+  }
+}
+@media (orientation: portrait) and (max-width: 650px) {
+  .stones-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(200px, 1fr) auto;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .stones-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .stones-side .duel-status {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-content: center;
+  }
+  .stones-side .duel-moves {
+    grid-column: 1 / -1;
+    max-height: 72px;
+    min-height: 32px;
+  }
+  .stones-side .duel-actions {
+    grid-column: 1 / -1;
+  }
+  .stones-count {
+    grid-column: 1 / -1;
+  }
+  .stones-side .duel-card:last-child {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}

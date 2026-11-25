@@ -10,6 +10,9 @@ import { registerGame } from './core/registry';
 import { chess } from './games/chess';
 import { doudizhu } from './games/doudizhu';
 import { gemguild } from './games/gemguild';
+import { gomoku } from './games/gomoku';
+import { paodekuai } from './games/paodekuai';
+import { reversi } from './games/reversi';
 import { guandan } from './games/guandan';
 import { hexisle } from './games/hexisle';
 import { heluogangci, pinghu } from './games/heluo';
@@ -33,6 +36,9 @@ export * as ss from './games/spellstones';
 export * as oc from './games/onecard';
 export * as hi from './games/hexisle';
 export * as gg from './games/gemguild';
+export * as gm from './games/gomoku';
+export * as pdk from './games/paodekuai';
+export * as rv from './games/reversi';
 export * as ch from './games/chess';
 export * as xq from './games/xiangqi';
 export * as xyj from './games/xiyouji';
@@ -40,6 +46,7 @@ export * as mj from './mahjong';
 
 export {
   doudizhu,
+  paodekuai,
   guandan,
   shuangsheng,
   texas,
@@ -48,6 +55,8 @@ export {
   heluogangci,
   xiangqi,
   chess,
+  gomoku,
+  reversi,
   spellstones,
   onecard,
   hexisle,
@@ -59,6 +68,7 @@ export {
 // 内置玩法（顺序即大厅展示顺序）
 for (const g of [
   doudizhu,
+  paodekuai,
   guandan,
   shuangsheng,
   texas,
@@ -67,6 +77,8 @@ for (const g of [
   heluogangci,
   xiangqi,
   chess,
+  gomoku,
+  reversi,
   spellstones,
   onecard,
   hexisle,

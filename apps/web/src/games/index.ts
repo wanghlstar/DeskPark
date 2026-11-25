@@ -7,6 +7,7 @@ import { GemGuildArt } from './gemguild/art';
 import { HexArt } from './hexisle/art';
 import { OneCardArt } from './onecard/cards';
 import { SpellArt } from './spellstones/spells';
+import { GomokuArt, ReversiArt } from './shared/stone-art';
 import { XiangqiArt } from './xiangqi/pieces';
 
 /**
@@ -41,6 +42,13 @@ export const GAME_UIS: GameUI[] = [
     tint: ['#b8553f', '#7c2f25'],
     showcase: [c(1, 'S', 2), c(2, 'J', 16), c(3, 'J', 17)],
     people: '3 人',
+  },
+  {
+    id: 'paodekuai',
+    Board: lazy(() => import('./paodekuai/PaodekuaiBoard')),
+    tint: ['#bd7541', '#703f24'],
+    showcase: [c(1, 'S', 3), c(2, 'H', 14), c(3, 'S', 2)],
+    people: '3 人 · 48 张',
   },
   {
     id: 'guandan',
@@ -122,6 +130,22 @@ export const GAME_UIS: GameUI[] = [
     showcase: [],
     Art: ChessArt,
     people: '2 人',
+  },
+  {
+    id: 'gomoku',
+    Board: lazy(() => import('./shared/StoneBoard')),
+    tint: ['#9c793e', '#564021'],
+    showcase: [],
+    Art: GomokuArt,
+    people: '2 人 · 自由五子棋',
+  },
+  {
+    id: 'reversi',
+    Board: lazy(() => import('./shared/StoneBoard')),
+    tint: ['#4a8370', '#23473c'],
+    showcase: [],
+    Art: ReversiArt,
+    people: '2 人 · 翻转黑白',
   },
   {
     id: 'spellstones',

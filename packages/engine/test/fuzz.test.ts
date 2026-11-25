@@ -6,12 +6,15 @@ import {
   chess,
   doudizhu,
   gemguild,
+  gomoku,
   guandan,
   heluogangci,
   hexisle,
   highcard,
   onecard,
   pinghu,
+  paodekuai,
+  reversi,
   shuangsheng,
   sichuan,
   spellstones,
@@ -152,6 +155,18 @@ function fuzz(def: AnyGame, players: number, options: unknown, types: string[], 
 }
 
 describe('畸形动作模糊测试（模拟恶意联机客户端）', () => {
+  it('五子棋', () => {
+    for (let seed = 1; seed <= 4; seed++)
+      fuzz(gomoku, 2, { level: 1, side: 'random' }, ['place', 'undo', 'resign'], seed);
+  });
+  it('跑得快', () => {
+    for (let seed = 1; seed <= 6; seed++)
+      fuzz(paodekuai, 3, { rounds: 1 }, ['play', 'pass', 'ready'], seed);
+  });
+  it('黑白棋', () => {
+    for (let seed = 1; seed <= 4; seed++)
+      fuzz(reversi, 2, { level: 1, side: 'random' }, ['place', 'undo', 'resign'], seed);
+  });
   it('斗地主', () => {
     for (let seed = 1; seed <= 15; seed++)
       fuzz(doudizhu, 3, doudizhu.defaultOptions, ['bid', 'play', 'pass', 'ready'], seed);

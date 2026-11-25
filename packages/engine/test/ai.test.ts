@@ -7,12 +7,15 @@ import {
   chess,
   doudizhu,
   gemguild,
+  gomoku,
   guandan,
   heluogangci,
   hexisle,
   highcard,
   onecard,
   pinghu,
+  paodekuai,
+  reversi,
   shuangsheng,
   sichuan,
   spellstones,
@@ -67,6 +70,18 @@ function checkPrompts(
 }
 
 describe('大模型接管：候选动作', () => {
+  it('五子棋', () => {
+    for (let seed = 1; seed <= 3; seed++)
+      expect(checkPrompts(gomoku, 2, { level: 1, side: 'random' }, seed, 226)).toBeGreaterThan(5);
+  });
+  it('跑得快', () => {
+    for (let seed = 1; seed <= 4; seed++)
+      expect(checkPrompts(paodekuai, 3, { rounds: 1 }, seed, 300)).toBeGreaterThan(10);
+  });
+  it('黑白棋', () => {
+    for (let seed = 1; seed <= 3; seed++)
+      expect(checkPrompts(reversi, 2, { level: 1, side: 'random' }, seed, 61)).toBeGreaterThan(10);
+  });
   it('斗地主', () => {
     for (let seed = 1; seed <= 6; seed++)
       expect(checkPrompts(doudizhu, 3, { baseScore: 1, rounds: 1 }, seed)).toBeGreaterThan(10);
