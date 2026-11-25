@@ -12,6 +12,5 @@ desktop_uidir=ui
 desktop_applaunchname=deskpark.main
 install_dep_apps=nodejs_v22
 ctl_stop=true
-service_port=8787
-checkport=true
+checkport=false
 disable_authorization_path=true

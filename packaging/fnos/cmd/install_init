@@ -1,2 +1,12 @@
 #!/bin/bash
+
+port="${wizard_port-8787}"
+if ! [[ "$port" =~ ^[1-9][0-9]{3,4}$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
+    message='服务端口必须为 1024–65535 之间的整数，请重新填写。'
+    printf '%s\n' "$message" >&2
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        printf '%s\n' "$message" > "$TRIM_TEMP_LOGFILE"
+    fi
+    exit 1
+fi
 exit 0

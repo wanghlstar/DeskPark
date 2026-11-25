@@ -12,7 +12,10 @@ const main = join(pack, 'cmd/main');
 
 function invoke(command, env) {
   return new Promise((resolve) => {
-    execFile('bash', [main, command], { env, timeout: 20_000 }, (error, stdout, stderr) => {
+    const args = ['start', 'stop', 'status'].includes(command)
+      ? [main, command]
+      : [join(pack, 'cmd', command)];
+    execFile('bash', args, { env, timeout: 20_000 }, (error, stdout, stderr) => {
       resolve({ code: error?.code ?? 0, stdout, stderr });
     });
   });
@@ -31,6 +34,7 @@ async function fixture(t) {
     TRIM_APPDEST: join(pack, 'app'),
     TRIM_PKGVAR: data,
     TRIM_SERVICE_PORT: String(port),
+    wizard_port: String(port),
     TRIM_TEMP_LOGFILE: join(data, 'error.log'),
   };
   t.after(async () => {
@@ -39,6 +43,55 @@ async function fixture(t) {
   });
   return { data, env, port, url: `http://127.0.0.1:${port}` };
 }
+
+test('安装向导要求填写有效端口，桌面入口使用同一向导字段', () => {
+  const wizard = join(pack, 'wizard/install');
+  assert.ok(existsSync(wizard), 'FPK 缺少端口安装向导');
+  const steps = JSON.parse(readFileSync(wizard, 'utf8'));
+  const field = steps.flatMap((step) => step.items).find((item) => item.field === 'wizard_port');
+  assert.equal(field?.type, 'text');
+  assert.equal(field.initValue, '8787');
+  assert.ok(field.rules.some((rule) => rule.required));
+  const pattern = new RegExp(field.rules.find((rule) => rule.pattern).pattern);
+  for (const port of ['1024', '1099', '2000', '8787', '10000', '60000', '65000', '65535']) {
+    assert.ok(pattern.test(port), `向导应接受端口 ${port}`);
+  }
+  for (const port of ['', '0', '1023', '65536', '99999', '08787', 'abc', '1e4']) {
+    assert.ok(!pattern.test(port), `向导应拒绝端口 ${port}`);
+  }
+  const ui = JSON.parse(readFileSync(join(pack, 'app/ui/config'), 'utf8'));
+  assert.equal(ui['.url']['deskpark.main'].port, '${wizard_port}');
+  const manifest = readFileSync(join(pack, 'manifest'), 'utf8');
+  assert.match(manifest, /^checkport=false$/m);
+  assert.doesNotMatch(manifest, /^service_port=/m);
+});
+
+test('安装填写的端口用于服务启动，原默认端口被占用不影响运行', async (t) => {
+  const { env, url } = await fixture(t);
+  const listener = createServer().listen(0, '0.0.0.0');
+  await once(listener, 'listening');
+  t.after(() => new Promise((resolve) => listener.close(resolve)));
+  env.TRIM_SERVICE_PORT = String(listener.address().port);
+  assert.equal((await invoke('install_init', env)).code, 0);
+  const started = await invoke('start', env);
+  assert.equal(started.code, 0, started.stderr);
+  assert.equal((await fetch(`${url}/healthz`)).status, 200);
+  assert.equal((await invoke('stop', env)).code, 0);
+  assert.equal((await invoke('start', env)).code, 0);
+  assert.equal((await fetch(`${url}/healthz`)).status, 200);
+});
+
+test('安装与启动均拒绝无效向导端口，并提示有效范围', async (t) => {
+  const { env } = await fixture(t);
+  for (const port of ['', '0', '1023', '65536', '99999', '08787', '-1', 'abc', '1e4']) {
+    for (const command of ['install_init', 'start']) {
+      const rejected = await invoke(command, { ...env, wizard_port: port });
+      assert.equal(rejected.code, 1, `${command} 不应接受端口 ${JSON.stringify(port)}`);
+      assert.match(readFileSync(env.TRIM_TEMP_LOGFILE, 'utf8'), /1024.*65535/);
+      assert.equal((await invoke('status', env)).code, 3);
+    }
+  }
+});
 
 test('FPK 可启动真实服务，提供网页与 WebSocket，重复启动后仍可正常停止', async (t) => {
   const { data, env, port, url } = await fixture(t);

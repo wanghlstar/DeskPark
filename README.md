@@ -138,7 +138,7 @@ docker compose pull && docker compose up -d     # 打开 http://服务器IP:8787
 
 ### 飞牛 fnOS 应用
 
-原生 FPK 包含网页和联机服务，依赖飞牛 Node.js 22，安装后从桌面图标打开，默认地址为 `http://飞牛IP:8787`。在 **fnOS FPK** Actions 工作流下载 `deskpark-fnos` 产物，手动安装其中的 `.fpk`；详细步骤与构建方式见 [飞牛安装指南](https://github.com/wanghlstar/DeskPark/blob/main/docs/FNOS.md)。
+原生 FPK 包含网页和联机服务，依赖飞牛 Node.js 22，安装时可填写访问端口（默认 `8787`），安装后从桌面图标打开。在 **fnOS FPK** Actions 工作流下载 `deskpark-fnos` 产物，手动安装其中的 `.fpk`；详细步骤与构建方式见 [飞牛安装指南](https://github.com/wanghlstar/DeskPark/blob/main/docs/FNOS.md)。
 
 ## 项目结构
 
