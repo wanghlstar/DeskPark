@@ -73,7 +73,7 @@ export type ClaimChoice = 'gang' | 'peng' | 'pass';
 export interface ClaimWindow {
   kind: 'claims';
   required: boolean[];
-  decisions: ({ type: ClaimChoice } | null)[];
+  decisions: ({ type: ClaimChoice; noCi?: boolean } | null)[];
   options: (ClaimChoice[] | null)[];
   source: Seat;
   tile: HlTile;
@@ -141,7 +141,8 @@ export interface HlState {
 
 export type HlAction =
   | { type: 'discard'; tile: number }
-  | { type: 'gang'; tile?: number }
+  /** noCi：能次也只开杠不次，照常记杠分并补牌 */
+  | { type: 'gang'; tile?: number; noCi?: boolean }
   | { type: 'peng' }
   | { type: 'pass' }
   | { type: 'pici' }
@@ -332,7 +333,7 @@ function wallOver(s: HlState) {
 
 /**
  * 开杠之后：先拿次牌试胡；能胡就是「次」（触发次的这一杠不另算杠分），
- * 否则记杠分并从牌墙尾补牌。
+ * 否则记杠分并从牌墙尾补牌。玩家也可以选择只开杠不次（noCi）。
  */
 function afterKong(
   s: HlState,
@@ -340,9 +341,10 @@ function afterKong(
   type: KongType,
   from: Seat | null,
   baoFrom: Seat | null,
+  noCi = false,
 ) {
   const p = s.players[seat];
-  if (s.ciTile && isHlWin(countHlKinds([...p.hand, s.ciTile]), p.melds.length)) {
+  if (!noCi && s.ciTile && isHlWin(countHlKinds([...p.hand, s.ciTile]), p.melds.length)) {
     const kind: WinKind = baoFrom !== null ? 'baoci' : type === 'an' ? 'anci' : 'mingci';
     finishWin(s, seat, kind, s.ciTile, from, baoFrom);
     return;
@@ -417,7 +419,7 @@ function resolveClaims(s: HlState) {
     s.turn = ganger;
     s.turnDrawn = false;
     s.drawnThisTurn = null;
-    afterKong(s, ganger, 'ming', source, baoFrom);
+    afterKong(s, ganger, 'ming', source, baoFrom, !!dec(ganger)?.noCi);
     return;
   }
 
@@ -653,7 +655,10 @@ export const heluogangci: GameDefinition<HlState, HlAction, HlView, HlOptions> =
       case 'pass':
       case 'gang': {
         if (s.window) {
-          s.window.decisions[seat] = { type: action.type };
+          s.window.decisions[seat] =
+            action.type === 'gang' && action.noCi
+              ? { type: 'gang', noCi: true }
+              : { type: action.type };
           if (windowDone(s.window)) resolveClaims(s);
           return s;
         }
@@ -668,7 +673,7 @@ export const heluogangci: GameDefinition<HlState, HlAction, HlView, HlOptions> =
           pung.type = 'kong';
           pung.kongType = 'ba';
           pung.tiles = [...pung.tiles, tile];
-          afterKong(s, seat, 'ba', pung.pengFrom, null);
+          afterKong(s, seat, 'ba', pung.pengFrom, null, !!(action as { noCi?: boolean }).noCi);
           return s;
         }
         const four = p.hand.filter((t) => t.kind === kind);
@@ -681,7 +686,7 @@ export const heluogangci: GameDefinition<HlState, HlAction, HlView, HlOptions> =
           from: null,
           pengFrom: null,
         });
-        afterKong(s, seat, 'an', null, null);
+        afterKong(s, seat, 'an', null, null, !!(action as { noCi?: boolean }).noCi);
         return s;
       }
       case 'pici':

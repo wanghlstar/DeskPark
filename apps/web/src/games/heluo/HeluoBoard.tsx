@@ -448,12 +448,14 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
                 {ctl.players[v.window.source].name} 打出
                 <HlTileView tile={v.window.tile} w="calc(var(--rw) * 1.1)" />
               </span>
+              {L.gang.length > 0 && L.gang[0].ci && (
+                <Button variant="felt-primary" onClick={() => act({ type: 'gang' })}>
+                  杠次
+                </Button>
+              )}
               {L.gang.length > 0 && (
-                <Button
-                  variant={L.gang[0].ci ? 'felt-primary' : 'felt'}
-                  onClick={() => act({ type: 'gang' })}
-                >
-                  {L.gang[0].ci ? '杠次' : '杠'}
+                <Button variant="felt" onClick={() => act({ type: 'gang', noCi: true })}>
+                  杠
                 </Button>
               )}
               {L.peng && (
@@ -470,16 +472,29 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
           )}
           {L && v.phase === 'play' && !v.window && (
             <div className="action-bar">
-              {L.gang.map((g) => (
-                <Button
-                  key={g.tile}
-                  variant={g.ci ? 'felt-primary' : 'felt'}
-                  onClick={() => act({ type: 'gang', tile: g.tile })}
-                >
-                  {g.ci ? (g.type === 'an' ? '暗次' : '加杠次') : g.type === 'an' ? '暗杠' : '加杠'}{' '}
-                  {KIND_NAME[v.hand.find((t) => t.id === g.tile)?.kind ?? 0]}
-                </Button>
-              ))}
+              {L.gang.flatMap((g) => {
+                const name = KIND_NAME[v.hand.find((t) => t.id === g.tile)?.kind ?? 0];
+                const plain = (
+                  <Button
+                    key={`${g.tile}-gang`}
+                    variant="felt"
+                    onClick={() => act({ type: 'gang', tile: g.tile, noCi: true })}
+                  >
+                    {g.type === 'an' ? '暗杠' : '加杠'} {name}
+                  </Button>
+                );
+                if (!g.ci) return [plain];
+                return [
+                  <Button
+                    key={`${g.tile}-ci`}
+                    variant="felt-primary"
+                    onClick={() => act({ type: 'gang', tile: g.tile })}
+                  >
+                    {g.type === 'an' ? '暗次' : '加杠次'} {name}
+                  </Button>,
+                  plain,
+                ];
+              })}
               {L.pici && (
                 <Button variant="felt-primary" onClick={() => act({ type: 'pici' })}>
                   屁次
