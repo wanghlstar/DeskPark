@@ -1,8 +1,10 @@
 import { Rng, SUIT_SYMBOL, sh } from '@park/engine';
 import type { Card } from '@park/engine';
-import { RotateCw } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { Eye, History, RotateCw } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { CardRow, Hand } from '../../components/Hand';
+import { PlayingCard } from '../../components/PlayingCard';
 import type { CardMark } from '../../components/Hand';
 import { Avatar, Seat } from '../../components/Seat';
 import { Button, Sheet, toast } from '../../components/ui';
@@ -64,14 +66,107 @@ function CenterInfo({ v }: { v: sh.SsView }) {
 }
 
 /** 闲家得分：放大显示在桌面右上方，分数变化时闪一下 */
-function ScoreBig({ points }: { points: number }) {
+function ScoreBig({ points, onLast }: { points: number; onLast?: () => void }) {
   return (
     <div className={`sj-score-big ${points >= 80 ? 'is-hot' : ''}`}>
       <span>闲家得分</span>
       <b key={points} className="num">
         {points}
       </b>
+      {onLast && (
+        <button type="button" className="sj-peek-btn" onClick={onLast} title="查看上一圈">
+          <History size={14} /> 上一圈
+        </button>
+      )}
     </div>
+  );
+}
+
+/** 上一圈：四家各出了什么牌 */
+function LastTrickSheet({
+  v,
+  players,
+  markOf,
+  onClose,
+}: {
+  v: sh.SsView;
+  players: { name: string }[];
+  markOf: (c: Card) => CardMark | undefined;
+  onClose: () => void;
+}) {
+  const t = v.lastTrick;
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title="上一圈"
+      subtitle={
+        t
+          ? `${players[t.winner!]?.name} 最大${t.points ? ` · ${t.points} 分` : ''}${
+              t.points && sh.teamOf(t.winner!) !== v.dealerTeam ? '（闲家得分）' : ''
+            }`
+          : undefined
+      }
+      footer={<Button onClick={onClose}>关闭</Button>}
+    >
+      {t ? (
+        <div className="sj-last">
+          {t.plays.map((p, i) => (
+            <div key={p.seat} className={`sj-last__row ${t.winner === p.seat ? 'is-big' : ''}`}>
+              <span className="sj-last__who">
+                {players[p.seat]?.name}
+                {i === 0 && <small>首出</small>}
+                {v.dealer === p.seat && <small>庄</small>}
+                {t.winner === p.seat && <em>最大</em>}
+              </span>
+              <CardRow cards={p.cards} w="var(--cw-xs)" overlap={0.45} markOf={markOf} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="sj-last__empty">还没有打完的一圈</p>
+      )}
+    </Sheet>
+  );
+}
+
+/** 底牌：扣底的一家能看，其他人只看到牌背 */
+function BottomSheet({
+  v,
+  players,
+  markOf,
+  onClose,
+}: {
+  v: sh.SsView;
+  players: { name: string }[];
+  markOf: (c: Card) => CardMark | undefined;
+  onClose: () => void;
+}) {
+  const name = v.burier !== null ? players[v.burier]?.name : '';
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={`${name} 扣的底牌`}
+      subtitle={
+        v.bottom
+          ? `共 8 张 · 底牌分 ${sh.sumPoints(v.bottom)}`
+          : `只有扣底的一家（${name}）能看，本局结束后公开`
+      }
+      footer={<Button onClick={onClose}>关闭</Button>}
+    >
+      <div className="sj-bottom-peek">
+        {v.bottom ? (
+          <CardRow cards={v.bottom} w="var(--cw-sm)" overlap={0.35} markOf={markOf} />
+        ) : (
+          <div className="cardrow" style={{ '--w': 'var(--cw-sm)', '--ov': 0.55 } as CSSProperties}>
+            {Array.from({ length: 8 }, (_, i) => (
+              <PlayingCard key={i} faceDown w="var(--cw-sm)" />
+            ))}
+          </div>
+        )}
+      </div>
+    </Sheet>
   );
 }
 
@@ -93,6 +188,7 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
   const myChoice = !spectator && (v.phase === 'declare' || v.phase === 'fan') && v.waiting === me;
   const canDeclare = !spectator && v.declOptions.length > 0;
 
+  const [peek, setPeek] = useState<null | 'bottom' | 'last'>(null);
   const [sel, setSel] = useSelection(v.hand, `${v.round}-${v.phase}-${v.burier}`);
   useTurnCue(myTurn || myBury || myChoice);
   useShuangshengVoice(v, players);
@@ -158,13 +254,28 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
 
   const tagOf = (s: number) => (v.dealer === s ? '庄' : undefined);
 
+  // 扣完底之后，在最后扣底那家的头像下面放「底牌」入口
+  const bottomReady =
+    v.burier !== null && (v.phase === 'fan' || v.phase === 'play' || v.phase === 'trickEnd');
+  const bottomBtn = (s: number) =>
+    bottomReady && v.burier === s ? (
+      <button type="button" className="sj-peek-btn is-bottom" onClick={() => setPeek('bottom')}>
+        <Eye size={13} /> 底牌
+      </button>
+    ) : null;
+
   const seatEl = (s: number, side: 'left' | 'right' | 'top') => (
     <Seat
       player={players[s]}
       active={v.waiting === s && (playing || v.phase === 'bury' || myChoiceFor(v, s))}
       deadline={ctl.deadlines[s]}
       tag={tagOf(s)}
-      sub={<CountChip n={v.handCounts[s]} warnAt={0} />}
+      sub={
+        <>
+          <CountChip n={v.handCounts[s]} warnAt={0} />
+          {bottomBtn(s)}
+        </>
+      }
       layout={side === 'top' ? 'row' : 'column'}
       bubble={bubbleOf(s)}
       bubbleSide={side === 'left' ? 'right' : side === 'right' ? 'left' : 'bottom'}
@@ -220,7 +331,14 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
       <div className="sj__center">
         <div className="sj__top">{seatEl(top, 'top')}</div>
         {!over && <CenterInfo v={v} />}
-        {!over && v.trumpKnown && <ScoreBig points={v.points} />}
+        {!over && v.trumpKnown && (
+          <ScoreBig
+            points={v.points}
+            onLast={
+              v.lastTrick && (playing || v.phase === 'trickEnd') ? () => setPeek('last') : undefined
+            }
+          />
+        )}
         <div className={`sj__zone is-top ${zoneCls(top)}`}>
           <MoveZone move={trickMove(top)} from="top" markOf={markOf} />
           {bigTag(top)}
@@ -255,7 +373,12 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
             tag={tagOf(me)}
             layout="row"
             size={52}
-            sub={<CountChip n={v.handCounts[me]} warnAt={0} />}
+            sub={
+              <>
+                <CountChip n={v.handCounts[me]} warnAt={0} />
+                {bottomBtn(me)}
+              </>
+            }
           />
         </div>
 
@@ -332,6 +455,12 @@ export default function ShuangshengBoard({ ctl }: { ctl: Ctl }) {
         )}
       </div>
 
+      {peek === 'bottom' && bottomReady && (
+        <BottomSheet v={v} players={players} markOf={markOf} onClose={() => setPeek(null)} />
+      )}
+      {peek === 'last' && v.lastTrick && !over && (
+        <LastTrickSheet v={v} players={players} markOf={markOf} onClose={() => setPeek(null)} />
+      )}
       {over && v.result && <RoundResult ctl={ctl} v={v} me={me} spectator={spectator} />}
     </div>
   );
