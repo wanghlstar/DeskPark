@@ -107,14 +107,48 @@ function HlTileView({
 }
 
 /**
- * 碰牌标记：把来源方向的那张翻成背面，一眼看出碰的是谁。
- * 下家（出牌顺序下一位）翻最右，对家翻中间，上家翻最左；加杠后标记保留。
+ * 碰 / 明杠标记：把来源方向的那张翻成背面，一眼看出碰的、杠的是谁。
+ * 下家（出牌顺序下一位）翻最右，对家翻中间，上家翻最左；加杠后标记保留；
+ * 自己摸齐的暗杠不标。
  */
 function pengFlipIndex(m: hl.HlMeld, owner: number): number {
-  const from = m.type === 'pung' ? m.from : m.kongType === 'ba' ? m.pengFrom : null;
+  const from =
+    m.type === 'pung'
+      ? m.from
+      : m.kongType === 'ba'
+        ? m.pengFrom
+        : m.kongType === 'ming'
+          ? m.from
+          : null;
   if (from === null) return -1;
   const rel = (from - owner + 4) % 4;
   return rel === 1 ? m.tiles.length - 1 : rel === 2 ? 1 : rel === 3 ? 0 : -1;
+}
+
+/** 结算里的一张手牌：次牌金框 + 「次」角标 */
+function ResTile({ tile, ci, highlight }: { tile: Tile; ci: boolean; highlight?: boolean }) {
+  if (!ci) return <HlTileView tile={tile} w="var(--rw)" highlight={highlight} />;
+  return (
+    <span className="sc-handtile is-ci is-res">
+      <HlTileView tile={tile} w="var(--rw)" highlight={highlight} />
+      <span className="hl-ci-mark">次</span>
+    </span>
+  );
+}
+
+/** 总分 + 本盘杠分（荒庄作废，胡牌时计入） */
+function ScoreSub({ v, s }: { v: hl.HlView; s: number }) {
+  const g = v.phase === 'play' ? v.gangDeltas[s] : 0;
+  return (
+    <span className="hl-scoresub">
+      <span className="num">{v.scores[s]}</span>
+      {g !== 0 && (
+        <span className={`hl-gangpts ${g > 0 ? 'is-plus' : 'is-minus'}`} title="本盘杠分，荒庄不算">
+          杠{signed(g)}
+        </span>
+      )}
+    </span>
+  );
 }
 
 function Melds({ melds, w, owner }: { melds: hl.HlMeld[]; w: string; owner: number }) {
@@ -310,7 +344,7 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
           size={54}
           layout={where === 'top' ? 'row' : 'column'}
           tag={s === v.dealer ? '庄' : undefined}
-          sub={<span className="num">{v.scores[s]}</span>}
+          sub={<ScoreSub v={v} s={s} />}
         />
         {p.won && <span className="sc-wonbadge">{WIN_NAME[p.won.kind]}</span>}
         <div className="sc-oppo">
@@ -404,7 +438,7 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
             size={48}
             layout="row"
             tag={me === v.dealer ? '庄' : undefined}
-            sub={<span className="num">{v.scores[me]}</span>}
+            sub={<ScoreSub v={v} s={me} />}
           />
         </div>
         <div className="sc-actions">
@@ -414,12 +448,14 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
                 {ctl.players[v.window.source].name} 打出
                 <HlTileView tile={v.window.tile} w="calc(var(--rw) * 1.1)" />
               </span>
+              {L.gang.length > 0 && L.gang[0].ci && (
+                <Button variant="felt-primary" onClick={() => act({ type: 'gang' })}>
+                  杠次
+                </Button>
+              )}
               {L.gang.length > 0 && (
-                <Button
-                  variant={L.gang[0].ci ? 'felt-primary' : 'felt'}
-                  onClick={() => act({ type: 'gang' })}
-                >
-                  {L.gang[0].ci ? '杠次' : '杠'}
+                <Button variant="felt" onClick={() => act({ type: 'gang', noCi: true })}>
+                  杠
                 </Button>
               )}
               {L.peng && (
@@ -436,16 +472,29 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
           )}
           {L && v.phase === 'play' && !v.window && (
             <div className="action-bar">
-              {L.gang.map((g) => (
-                <Button
-                  key={g.tile}
-                  variant={g.ci ? 'felt-primary' : 'felt'}
-                  onClick={() => act({ type: 'gang', tile: g.tile })}
-                >
-                  {g.ci ? (g.type === 'an' ? '暗次' : '加杠次') : g.type === 'an' ? '暗杠' : '加杠'}{' '}
-                  {KIND_NAME[v.hand.find((t) => t.id === g.tile)?.kind ?? 0]}
-                </Button>
-              ))}
+              {L.gang.flatMap((g) => {
+                const name = KIND_NAME[v.hand.find((t) => t.id === g.tile)?.kind ?? 0];
+                const plain = (
+                  <Button
+                    key={`${g.tile}-gang`}
+                    variant="felt"
+                    onClick={() => act({ type: 'gang', tile: g.tile, noCi: true })}
+                  >
+                    {g.type === 'an' ? '暗杠' : '加杠'} {name}
+                  </Button>
+                );
+                if (!g.ci) return [plain];
+                return [
+                  <Button
+                    key={`${g.tile}-ci`}
+                    variant="felt-primary"
+                    onClick={() => act({ type: 'gang', tile: g.tile })}
+                  >
+                    {g.type === 'an' ? '暗次' : '加杠次'} {name}
+                  </Button>,
+                  plain,
+                ];
+              })}
               {L.pici && (
                 <Button variant="felt-primary" onClick={() => act({ type: 'pici' })}>
                   屁次
@@ -667,19 +716,15 @@ function RoundResult({
             <div key={s} className="sc-res-hand">
               <span>{ctl.players[s].name}</span>
               <div>
-                {v.players[s].melds
-                  .flatMap((m) => m.tiles)
-                  .map((t) => (
-                    <HlTileView key={t.id} tile={t} w="var(--rw)" />
-                  ))}
+                <Melds melds={v.players[s].melds} w="var(--rw)" owner={s} />
                 {v.players[s].melds.length > 0 && <i className="sc-gap" />}
                 {r.hands[s].map((t) => (
-                  <HlTileView key={t.id} tile={t} w="var(--rw)" />
+                  <ResTile key={t.id} tile={t} ci={t.kind === v.ciKind} />
                 ))}
                 {r.win?.seat === s && r.win.tile && r.win.kind !== 'zimo' && (
                   <>
                     <i className="sc-gap" />
-                    <HlTileView tile={r.win.tile} w="var(--rw)" highlight />
+                    <ResTile tile={r.win.tile} ci={r.win.tile.kind === v.ciKind} highlight />
                   </>
                 )}
               </div>

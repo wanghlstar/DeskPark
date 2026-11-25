@@ -118,6 +118,30 @@ describe('河洛杠次 · 流程', () => {
     expect(next.result?.win?.seat).toBe(1);
   });
 
+  it('能次也可以只开杠不次：照常记杠分、从牌尾补牌，不结束本盘', () => {
+    const s = base();
+    const pool = new Pool();
+    s.ciTile = pool.tiles('3z')[0];
+    s.ciKind = s.ciTile.kind;
+    s.players[1].hand = pool.tiles('444m888s666p999p3z');
+    s.players[0].hand = pool.tiles('9p123m1s5z');
+    s.players[2].hand = pool.tiles('147m258s');
+    s.players[3].hand = pool.tiles('369m147s');
+    s.turn = 0;
+    s.turnDrawn = true;
+    const nine = s.players[0].hand[0].id;
+    const wallBefore = s.wall.length;
+    const after = heluogangci.apply(s, 0, { type: 'discard', tile: nine });
+    expect(heluogangci.validate(after, 1, { type: 'gang', noCi: true })).toBeNull();
+    const next = heluogangci.apply(after, 1, { type: 'gang', noCi: true });
+    expect(next.result).toBeNull();
+    expect(next.phase).toBe('play');
+    expect(next.gangDeltas[1]).toBe(0.5);
+    expect(next.gangDeltas[0]).toBe(-0.5);
+    expect(next.wall.length).toBe(wallBefore - 1);
+    expect(next.turn).toBe(1);
+  });
+
   function mingCiAt(wallLeft: number) {
     const s = base();
     const pool = new Pool();
