@@ -2,7 +2,7 @@ name: Docker
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'game/**']
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -17,6 +17,9 @@ permissions:
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/deskpark
+  # 同时推送到 Docker Hub（群晖 Container Manager 只检测 Docker Hub 的更新）
+  # 需在仓库 Settings → Secrets and variables → Actions 添加 DOCKERHUB_USERNAME、DOCKERHUB_TOKEN；未配置时自动跳过
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
 jobs:
   image:
@@ -63,13 +66,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request' && env.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE }}
+          images: |
+            ${{ env.IMAGE }}
+            name=docker.io/${{ env.DOCKERHUB_USERNAME }}/deskpark,enable=${{ env.DOCKERHUB_USERNAME != '' }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-
@@ -85,3 +98,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # 3) 把 README 同步为 Docker Hub 仓库说明（令牌需 Read, Write, Delete 权限）
+      - name: Docker Hub description
+        if: github.event_name != 'pull_request' && env.DOCKERHUB_USERNAME != '' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/deskpark
+          short-description: 闲亭 DeskPark：网页桌游平台，斗地主/掼蛋/双升/麻将，单机人机+多人联机
+          enable-url-completion: true

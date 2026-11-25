@@ -7,13 +7,16 @@ import {
   doudizhu,
   gemguild,
   guandan,
+  heluogangci,
   hexisle,
   highcard,
   onecard,
+  shuangsheng,
   sichuan,
   spellstones,
   texas,
   xiangqi,
+  xiyouji,
 } from '../src';
 
 /** 状态里不允许出现 NaN / Infinity（会让筹码、分数等永久损坏） */
@@ -156,6 +159,10 @@ describe('畸形动作模糊测试（模拟恶意联机客户端）', () => {
     for (let seed = 1; seed <= 6; seed++)
       fuzz(guandan, 4, guandan.defaultOptions, ['play', 'pass', 'return', 'ready'], seed);
   });
+  it('西游记', () => {
+    for (let seed = 1; seed <= 10; seed++)
+      fuzz(xiyouji, 4, xiyouji.defaultOptions, ['play', 'pass', 'ready'], seed);
+  });
   it('德州扑克', () => {
     for (let seed = 1; seed <= 15; seed++)
       fuzz(
@@ -166,6 +173,16 @@ describe('畸形动作模糊测试（模拟恶意联机客户端）', () => {
         seed,
       );
   });
+  it('双升', () => {
+    for (let seed = 1; seed <= 6; seed++)
+      fuzz(
+        shuangsheng,
+        4,
+        shuangsheng.defaultOptions,
+        ['declare', 'pass', 'bury', 'play', 'ready', 'deal', 'dealt', 'flip', 'collect'],
+        seed,
+      );
+  });
   it('四川麻将', () => {
     for (let seed = 1; seed <= 8; seed++)
       fuzz(
@@ -173,6 +190,16 @@ describe('畸形动作模糊测试（模拟恶意联机客户端）', () => {
         4,
         sichuan.defaultOptions,
         ['exchange', 'que', 'discard', 'hu', 'gang', 'peng', 'pass', 'ready'],
+        seed,
+      );
+  });
+  it('河洛杠次', () => {
+    for (let seed = 1; seed <= 8; seed++)
+      fuzz(
+        heluogangci,
+        4,
+        heluogangci.defaultOptions,
+        ['discard', 'gang', 'peng', 'pass', 'pici', 'hu', 'ready'],
         seed,
       );
   });

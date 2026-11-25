@@ -2,43 +2,91 @@
 
 # 闲亭 · DeskPark
 
-**简洁优雅的网页桌游平台** —— 斗地主、掼蛋、德州扑克、四川麻将（血战到底）、中国象棋、国际象棋、桌游「魔法出包」「UON」「卡旦岛」「宝石商会」，单人练习或与好友联机。<br/>
+原始仓库：[solitern/DeskPark](https://github.com/solitern/DeskPark) · 本仓库：[yeyinghai/DeskPark](https://github.com/yeyinghai/DeskPark)
+
+**简洁优雅的网页桌游平台** —— 斗地主、掼蛋、双升、西游记、德州扑克、四川麻将（血战到底）、河洛杠次、中国象棋、国际象棋、桌游「魔法出包」「UON」「卡旦岛」「宝石商会」，单人练习或与好友联机。<br/>
 打开网页即玩，规则引擎与界面分离，可扩展自定义玩法，并为移植 App 预留了结构。
 
-[![CI](https://github.com/solitern/DeskPark/actions/workflows/ci.yml/badge.svg)](https://github.com/solitern/DeskPark/actions/workflows/ci.yml)
-[![Docker](https://github.com/solitern/DeskPark/actions/workflows/docker.yml/badge.svg)](https://github.com/solitern/DeskPark/actions/workflows/docker.yml)
+[![CI](https://github.com/yeyinghai/DeskPark/actions/workflows/ci.yml/badge.svg)](https://github.com/yeyinghai/DeskPark/actions/workflows/ci.yml)
+[![Docker](https://github.com/yeyinghai/DeskPark/actions/workflows/docker.yml/badge.svg)](https://github.com/yeyinghai/DeskPark/actions/workflows/docker.yml)
 
-<img src="docs/screenshots/lobby.jpg" alt="大厅" width="860" />
+<img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/lobby.jpg" alt="大厅" width="860" />
 
 </div>
 
+## 新增玩法
+
+> ![新增](https://img.shields.io/badge/新增-双升-e4572e) ![新增](https://img.shields.io/badge/新增-河洛杠次-e4572e) ![新增](https://img.shields.io/badge/新增-西游记-e4572e) 本仓库（yeyinghai/DeskPark）在原项目基础上新增的三款玩法，均支持单人对电脑、联机与大模型接管。
+
+### ![新增](https://img.shields.io/badge/新增-e4572e) 双升（升级 / 拖拉机）
+
+4 人对家两队，两副牌共 108 张，每人 25 张、底牌 8 张，从 2 打起。
+
+- **亮主**：级牌配同色王才能亮——♠♣ 配小王，♥♦ 配大王；王 + 1 张级牌为弱主，王 + 一对级牌为强主，对王不能直接亮无主。
+- **坐庄**：第一局边发边亮，先亮者坐庄；之后每局发完牌再亮，庄方两人优先。无人亮主时翻底定主，翻到王打无主。
+- **反主**：用更强的亮法反主，只换主、换底，庄家不变；反成功后从反主者下家起再轮一圈。
+- **出牌**：庄家扣底 8 张后领出。有该门必须跟该门，有对跟对、有拖拉机跟拖拉机；没有该门可用主牌毙。同门可以甩牌，甩牌失败强制出其中最小的一组，不罚分。
+- **计分**：分牌 5 / 10 / K，共 200 分。闲家拿最后一墩可抠底：单张 ×2、对子 ×4、拖拉机按对数翻倍；庄家拿最后一墩底分不算。
+- **升级**：闲家得分 0 分庄 +3 级；5–35 分庄 +2；40–75 分庄 +1；80–115 分闲家上台；120–155 分闲家上台 +1，之后每多 40 分再 +1。庄方守住并打过 A 即赢下整场。
+- **查看底牌 / 上一圈**：扣完底后，最后扣底那家的头像下出现「底牌」入口，扣底的一家可随时查看自己扣的 8 张和底牌分（其他人看到牌背，本局结束后公开）；闲家得分旁的「上一圈」可查看上一墩四家各出的牌、谁最大、几分。
+- **语音报牌**：领出报牌面（黑桃K、对K、拖拉机、甩牌），跟牌报「毙了」「盖毙」「垫牌」「大你」，跟随「音效」开关。
+- **选项**：起始级牌（5·10·K / 2 / 8 / Q，默认 2）。
+- **从 5·10·K 打起**：先打 5，再打 10，再打 K，可以跳级但最高到 K，K 必须坐庄实打、不能跳过；打过 K 后从 2 开始升级到 A，之后再遇到 5、10、K 直接跳过；坐庄打 K 时闲家一分未得，连升两级直接打 3。5、10、K 这段必须连续打过，庄方丢庄（闲家上台，或该坐庄时亮不起主被对方坐庄）就退回 5 重打；闲家拿 120 分以上上台并升级算连续。
+
+### ![新增](https://img.shields.io/badge/新增-e4572e) 河洛杠次（洛阳杠次 / 杠呲）
+
+4 人麻将，136 张（万条筒 + 东南西北中发白，无花牌），不能吃，只能碰和杠。
+
+- **次牌**：牌墙尾端最后一摞上面的一张亮出为「次牌」，不能摸走。
+- **次**：开杠后先拿次牌试胡，能胡即为「次」；胡不了再从次牌下一张补牌。
+  - 明次（杠别人打出的牌出次）：出杠牌的人 −2，另两家各 −1，赢家 +4；加杠出次也算明次，−2 由当初被碰的那家出。
+  - 暗次：每家 −2，赢家 +6。
+  - 屁次：手里有三张与次牌相同的牌即可直接胡，其余手牌不论，每家 −2，赢家 +6。
+- **软次 / 硬次**：软次可以自摸（每家 −0.5，赢家 +1.5）；硬次只能靠次胡牌。
+- **杠分**：明杠点杠者付 0.5；加杠由当初被碰的那家付 0.5；暗杠三家各付 0.5。触发次的那一杠不另算杠分。
+- **包次**：牌墙剩 10 张（5 墩）起进入包次区，打出生张被别人明杠直接杠出次，由放张者包次（−4，赢家 +4）；暗次、加杠次不算包次。
+- **坐庄**：胡牌者下一盘坐庄；荒庄不换庄，杠分作废。
+- **选项**：次模式（软次 / 硬次）、包次开关、盘数（1 / 4 / 8 / 不限）。
+
+### ![新增](https://img.shields.io/badge/新增-e4572e) 西游记
+
+4 人各自为战，谁先出完谁赢。用两副牌中的 3、5、8、10、J、Q、K 和大小王，共 60 张，每人 15 张。
+
+- **身份**：10 师傅；5 悟空、8 八戒、3 沙僧是徒弟；K 大妖、Q 中妖、J 小妖是妖怪；大小王是万能牌。牌面左上角点数下写着对应的名字，王写「万能牌」。
+- **大小**：师傅压徒弟，徒弟压妖怪，妖怪压师傅，反过来不行。徒弟里 悟空 > 八戒 > 沙僧，妖怪里 大妖 > 中妖 > 小妖，同点不能压。
+- **出牌**：单张、对子，最多八张，必须同点数，王可补任意点；只出王时弹出点数选择，由出牌人指定。庄家先出，跟牌张数必须与本轮首手相同且压得过。本轮不要过的人，别人压过之后还能再出；其余三家都不要时，最后出牌的人重新领出，张数任意。
+- **计分**：有人出完本盘结束，剩余三家中手牌最多的按剩余张数扣分（并列都扣），先出完的人得这些分，其他人不变。
+- **坐庄**：第一盘翻牌定庄（摸到翻开那张牌的人坐庄），之后谁赢谁坐庄。
+- **语音报牌**：单张报名字（师傅、大妖…），两张报「对师傅」，三张及以上报「三个师傅」「五个大妖」，不出报「不要」，跟随「音效」开关。
+- **选项**：盘数（1 / 4 / 8 / 不限）。
+
 ## 特性
 
-- **扑克**：斗地主（叫分、全牌型、炸弹/春天倍数、记牌器）、掼蛋（两副牌、逢人配、同花顺、升级、进贡/还贡/抗贡、接风）、德州扑克（盲注与涨盲、最小加注规则、边池、摊牌比牌）。
-- **麻将**：四川麻将 · 成都血战到底（换三张、定缺、一炮多响、过水、最后四张必胡、刮风下雨、呼叫转移、查花猪 / 查大叫 / 退税），矢量麻将牌与听牌提示。<br/>**麻将导师**：需要时点「导师」打开、随时可以关——给当前这一步出主意并讲清楚为什么：换三张换哪三张、定缺哪门、打哪张（向听数、有效进张、听哪几张还剩几张、能胡几番）、该不该碰杠胡、对手可能在做什么、哪些牌对谁绝对安全；你选中一张牌，它会告诉你这张好不好。所有选择按本盘期望得分比较（胡牌率 × 胡了多少分 − 放炮风险 − 流局查账），出牌时还会在后台模拟几百局再修正（「精算」，可关），全部在本机计算，配置了大模型还能用大白话讲解、回答追问。
+- **扑克**：斗地主（叫分、全牌型、炸弹/春天倍数、记牌器）、掼蛋（两副牌、逢人配、同花顺、升级、进贡/还贡/抗贡、接风）、西游记（60 张，师傅 / 徒弟 / 妖怪循环克制，王为万能牌，1～8 张同点出牌，先出完者收剩牌最多家的分，中文语音报牌）、双升（升级 / 拖拉机，从 2 打起：级牌配同色王亮主，♠♣ 配小王、♥♦ 配大王，王 + 单级牌为弱主、王 + 对级牌为强主；第一局边发边亮、先亮坐庄，之后发完再亮、庄方优先；无人亮主则翻底定主，翻到王打无主；反主只换主换底不换庄；拖拉机与甩牌（甩牌失败强制出最小组，不罚分）；抠底单 ×2、对 ×4、拖拉机按对数翻倍；闲家 80 分上台、按得分升级，庄家守住打过 A 赢整场；出牌有中文语音报牌：毙了、盖毙、垫牌、大你、拖拉机、甩牌等）、德州扑克（盲注与涨盲、最小加注规则、边池、摊牌比牌）。
+- **麻将**：四川麻将 · 成都血战到底（换三张、定缺、一炮多响、过水、最后四张必胡、刮风下雨、呼叫转移、查花猪 / 查大叫 / 退税），矢量麻将牌与听牌提示。<br/>**河洛杠次**（洛阳杠次 / 杠呲）：136 张带字牌、无花牌，4 人，不能吃只能碰和杠；牌墙尾端亮出一张「次牌」，开杠后先拿次牌试胡（次），胡不了再补牌；明次、暗次、屁次（手里三张次牌直接胡）、软次可自摸 / 硬次只能次，剩 10 张起进入包次区，打生张被杠出次由放张者包次；明杠、加杠、暗杠各有杠分（头像旁实时显示），荒庄杠分作废，胡牌者下盘坐庄；能次时也可以选择只开杠不次；碰、明杠按来源翻一张牌标记。<br/>**麻将导师**：需要时点「导师」打开、随时可以关——给当前这一步出主意并讲清楚为什么：换三张换哪三张、定缺哪门、打哪张（向听数、有效进张、听哪几张还剩几张、能胡几番）、该不该碰杠胡、对手可能在做什么、哪些牌对谁绝对安全；你选中一张牌，它会告诉你这张好不好。所有选择按本盘期望得分比较（胡牌率 × 胡了多少分 − 放炮风险 − 流局查账），出牌时还会在后台模拟几百局再修正（「精算」，可关），全部在本机计算，配置了大模型还能用大白话讲解、回答追问。
 - **棋类**：中国象棋（马蹩腿、象眼、炮架、将帅不照面，长将判负，中文纵线记谱）与国际象棋（王车易位、吃过路兵、升变，逼和 / 三次重复 / 五十步 / 子力不足判和，标准记谱）；三档电脑强度（迭代加深 alpha-beta 搜索），可点选或拖动走子，和电脑下可以悔棋。<br/>**导师模式**：和电脑下棋时打开导师，每一步先在棋盘上选好，导师用 Stockfish / Fairy-Stockfish 引擎（在你的浏览器里运行，不占服务器）判断能不能走、讲清楚为什么，并在棋盘上画出对方的应着与更好的走法；没思路时可以要提示；配置了大模型还会用大白话再讲一遍，并回答你的追问。
 - **桌游**：魔法出包（2–5 人，玩法参考《出包魔法师 Abracada...What?》）——看得见别人的魔法石、猜不到自己的；还原实体版的游戏图版、计分轨道与城堡，喊咒语、连锁施法、火龙反噬与猫头鹰魔法石，点击任意魔法石查看效果，附带基于可见信息的概率推算。<br/>UON（2–8 人，四色接龙出牌，玩法同经典的四色牌游戏官方规则）——跳过、反转、+2、万能牌与 +4 质疑，只剩一张要喊「一张！」，忘了会被抓；可选计分与叠加罚牌，全部牌面为矢量手绘。<br/>卡旦岛（2–4 人，六边形拓荒经营，规则按经典拓荒桌游的基础版）——随机地图、掷骰产出、强盗、修路建村升城、发展卡、港口与玩家交易、最长道路 / 最大军队，地形与棋子全部为矢量手绘。<br/>宝石商会（2–4 人，宝石引擎构筑，规则按经典宝石收集桌游的官方规则）——拿宝石、预留与购买三级发展卡、贵族拜访，矿脉晶簇 / 工坊胸针 / 王冠三种手绘卡面与五种刻面宝石。
 - **像素形象**：赛博朋克、修仙、动漫、卡通四组共 22 个原创像素头像，每个都有对应的全身像素立绘（带待机动作）；切换「虚拟形象」后牌桌上所有人都以全身像显示，另有 8 个特别角色可选。
-- **AI 人机**：在设置里填写自己的大模型接口（Anthropic 或任意 OpenAI 兼容接口，如 DeepSeek、通义千问），点电脑玩家头像上方的 ✨ 即可让大模型接管它：读取它的手牌与场上局势来决定出牌，思考时显示省略号，还会偶尔发言、回应你的聊天。
+- **AI 人机**：在设置里填写自己的大模型接口（Anthropic 或任意 OpenAI 兼容接口，如 DeepSeek、通义千问），点电脑玩家头像上方的 ✨ 即可让大模型接管它：读取它的手牌与场上局势来决定出牌（各玩法均已支持，含双升的亮主 / 反主 / 出牌、河洛杠次的碰杠 / 屁次 / 自摸 / 打牌与西游记的出牌；双升扣底与发牌中抢亮仍由规则电脑决定），思考时显示省略号，还会偶尔发言、回应你的聊天。
 - **房间聊天**：等待房间与对局中都能聊天，支持快捷语、未读提醒与消息浮窗；另有表情互动。
 - **单人 & 多人**：单人与电脑对战（规则 AI，德州使用蒙特卡洛胜率估算；也可唤醒大模型接管）；联机输入 4 位房间号或分享链接即可加入，空位由电脑补齐。
 - **服务端权威**：联机时规则在服务器运行，每个座位只收到自己能看到的信息，杜绝作弊；断线重连自动恢复座位，离线/超时自动托管。
-- **可扩展玩法**：所有玩法都实现同一个 `GameDefinition` 插件接口，附带示例玩法「比大小」与 [新增玩法指南](docs/ADDING_A_GAME.md)。
+- **可扩展玩法**：所有玩法都实现同一个 `GameDefinition` 插件接口，附带示例玩法「比大小」与 [新增玩法指南](https://github.com/yeyinghai/DeskPark/blob/main/docs/ADDING_A_GAME.md)。
 - **简洁优雅的界面**：统一的设计令牌、自绘矢量花色与卡面、四种桌布、四色牌、深色模式、细腻的动效与合成音效；桌面与横/竖屏手机自适应。
-- **为 App 而设计**：规则引擎纯 TypeScript、无 DOM 依赖；平台相关能力集中在一个适配层，见 [App 移植方案](docs/PORTING.md)。
+- **为 App 而设计**：规则引擎纯 TypeScript、无 DOM 依赖；平台相关能力集中在一个适配层，见 [App 移植方案](https://github.com/yeyinghai/DeskPark/blob/main/docs/PORTING.md)。
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/doudizhu.jpg" alt="斗地主" /></td>
-    <td><img src="docs/screenshots/guandan.jpg" alt="掼蛋" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/doudizhu.jpg" alt="斗地主" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/guandan.jpg" alt="掼蛋" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/texas.jpg" alt="德州扑克" /></td>
-    <td><img src="docs/screenshots/result.jpg" alt="结算" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/texas.jpg" alt="德州扑克" /></td>
+    <td><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/result.jpg" alt="结算" /></td>
   </tr>
 </table>
 
-<p align="center"><img src="docs/screenshots/mobile.jpg" alt="手机横屏" width="560" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/yeyinghai/DeskPark/main/docs/screenshots/mobile.jpg" alt="手机横屏" width="560" /></p>
 
 ## 快速开始
 
@@ -69,14 +117,22 @@ npm run dev
 一个 Node 进程同时提供网页与联机服务，推荐用 Docker：
 
 ```bash
-git clone https://github.com/solitern/DeskPark.git && cd DeskPark
+git clone https://github.com/yeyinghai/DeskPark.git && cd DeskPark
 cp .env.example .env
 docker compose pull && docker compose up -d     # 打开 http://服务器IP:8787
 ```
 
-- 镜像 `ghcr.io/solitern/deskpark`（amd64 / arm64），每次推送 main 自动构建、冒烟测试并发布。
+- 镜像 `ghcr.io/yeyinghai/deskpark`（amd64 / arm64），每次推送 main 自动构建、冒烟测试并发布为 `latest`（新增玩法都合并进 main）。
 - 绑定域名并自动 HTTPS：`docker compose -f docker-compose.yml -f deploy/docker-compose.https.yml up -d`
-- 国内网络、版本回滚、Nginx 反代、不用 Docker 的方式等，见 **[部署指南](docs/DEPLOY.md)**。
+- 国内网络、版本回滚、Nginx 反代、不用 Docker 的方式等，见 **[部署指南](https://github.com/yeyinghai/DeskPark/blob/main/docs/DEPLOY.md)**。
+
+### Android 应用
+
+每次推送 main，GitHub Actions 的 **Android** 工作流用 Capacitor 打包 APK（在该次运行的 Artifacts 里下载 `deskpark-android`；推送 `v*` 标签时附在 Release 上）。
+
+- 启动时探测服务器：联网就打开线上最新版本（新游戏随 Docker 更新自动生效，不用重装），连不上就进入 APK 内置的离线版，单人照常可玩。
+- 服务器地址默认 `https://deskpark.yeyhome.com:8666/`，可在仓库 Variables 设置 `ANDROID_PUBLIC_URL` / `ANDROID_SERVER_URL`，或手动运行工作流时填写。
+- 语音报牌使用手机的「文字转语音」引擎（需支持中文）。
 
 ## 项目结构
 
@@ -92,15 +148,15 @@ docs/          架构、设计、玩法扩展、App 移植、路线图
 
 ## 文档
 
-- [部署指南](docs/DEPLOY.md) —— Docker、HTTPS、云服务器、国内网络
-- [架构说明](docs/ARCHITECTURE.md) —— 分层、数据流、信息隐藏、联机协议
-- [新增 / 自定义玩法](docs/ADDING_A_GAME.md) —— 以「比大小」为例的完整步骤
-- [设计规范](docs/DESIGN.md) —— 设计原则、色彩、字体、卡面、动效
-- [App 移植方案](docs/PORTING.md) —— Capacitor 快速上架与 React Native 原生化路线
-- [路线图](docs/ROADMAP.md) · [更新日志](CHANGELOG.md) · [贡献指南](CONTRIBUTING.md)
+- [部署指南](https://github.com/yeyinghai/DeskPark/blob/main/docs/DEPLOY.md) —— Docker、HTTPS、云服务器、国内网络
+- [架构说明](https://github.com/yeyinghai/DeskPark/blob/main/docs/ARCHITECTURE.md) —— 分层、数据流、信息隐藏、联机协议
+- [新增 / 自定义玩法](https://github.com/yeyinghai/DeskPark/blob/main/docs/ADDING_A_GAME.md) —— 以「比大小」为例的完整步骤
+- [设计规范](https://github.com/yeyinghai/DeskPark/blob/main/docs/DESIGN.md) —— 设计原则、色彩、字体、卡面、动效
+- [App 移植方案](https://github.com/yeyinghai/DeskPark/blob/main/docs/PORTING.md) —— Capacitor 快速上架与 React Native 原生化路线
+- [路线图](https://github.com/yeyinghai/DeskPark/blob/main/docs/ROADMAP.md) · [更新日志](https://github.com/yeyinghai/DeskPark/blob/main/CHANGELOG.md) · [贡献指南](https://github.com/yeyinghai/DeskPark/blob/main/CONTRIBUTING.md)
 
 ## 许可
 
-[MIT](LICENSE)
+[MIT](https://github.com/yeyinghai/DeskPark/blob/main/LICENSE)
 
 导师模式随附的棋类引擎是独立的第三方程序，按各自的许可证分发：[Stockfish](https://github.com/official-stockfish/Stockfish)（`apps/web/public/engines/stockfish/`，来自 npm 包 `stockfish@19.0.1`）与 [Fairy-Stockfish](https://github.com/fairy-stockfish/Fairy-Stockfish)（`apps/web/public/engines/fairy/`，来自 npm 包 `fairy-stockfish-nnue.wasm@1.1.12`），均为 GPL-3.0，许可证全文见各目录下的 `COPYING.txt`。

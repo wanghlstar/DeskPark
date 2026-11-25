@@ -51,11 +51,37 @@ export const GAME_UIS: GameUI[] = [
     people: '4 人 · 2v2',
   },
   {
+    id: 'shuangsheng',
+    Board: lazy(() => import('./shuangsheng/ShuangshengBoard')),
+    tint: ['#9a4a3a', '#5a2620'],
+    showcase: [c(1, 'J', 17), c(2, 'H', 2), c(3, 'H', 2)],
+    people: '4 人 · 2v2',
+  },
+  {
+    id: 'xiyouji',
+    Board: lazy(() => import('./xiyouji/XiyoujiBoard')),
+    tint: ['#a8562c', '#5e2a14'],
+    showcase: [c(1, 'H', 10), c(2, 'S', 5), c(3, 'C', 13)],
+    people: '4 人',
+  },
+  {
     id: 'texas',
     Board: lazy(() => import('./texas/TexasBoard')),
     tint: ['#2f6b55', '#163c30'],
     showcase: [c(1, 'S', 14), c(2, 'H', 14), c(3, 'S', 13)],
     people: '2–8 人',
+  },
+  {
+    id: 'heluogangci',
+    Board: lazy(() => import('./heluo/HeluoBoard')),
+    tint: ['#8f3d2f', '#4a1f18'],
+    showcase: [],
+    tiles: [
+      { id: 1, suit: 'wan', rank: 5 },
+      { id: 2, suit: 'tong', rank: 1 },
+      { id: 3, suit: 'tiao', rank: 1 },
+    ],
+    people: '4 人 · 河洛杠次',
   },
   {
     id: 'sichuan',

@@ -28,9 +28,11 @@ cd apps/web/android
 | 视口适配：安全区（刘海屏）、横竖屏、触摸拖选、禁止缩放                                               | 全局样式 / `index.html`                |
 | PWA manifest：手机浏览器可「添加到主屏幕」                                                           | `apps/web/public/manifest.webmanifest` |
 
-## 路线一：Capacitor 封装
+## 路线一：Capacitor 封装（Android 已实现）
 
-把现有网页打包为 iOS / Android 原生应用。Android 工程在本地生成，实际构建方式见上方；下方是后续规划，插件、深链接和 iOS 仍待实现与验证。
+除上面的本地测试包外，`mobile/`（Capacitor 配置、图标生成脚本）与 `.github/workflows/android.yml` 提供 CI 自动打包。外壳逻辑见 `apps/web/src/lib/appShell.ts`，原生语音见 `apps/web/src/lib/speech.ts`。
+
+把现有网页打包为 iOS / Android 原生应用。Android 工程在本地或 CI 中生成；下方列出其他平台能力的适配方向，深链接和 iOS 仍待实现与验证。
 
 1. Android 按 [打包指南](ANDROID_APK.md) 生成工程、同步资源并构建。
 2. 如需 iOS，安装相应平台依赖并生成 iOS 工程。

@@ -6,3 +6,4 @@ apps/web/public/engines
 packages/engine/test/fixtures
 packages/engine/src/games/sichuan/coach/oppnet-weights.ts
 apps/web/android
+demo

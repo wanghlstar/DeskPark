@@ -8,13 +8,16 @@ import {
   doudizhu,
   gemguild,
   guandan,
+  heluogangci,
   hexisle,
   highcard,
   onecard,
+  shuangsheng,
   sichuan,
   spellstones,
   texas,
   xiangqi,
+  xiyouji,
 } from '../src';
 
 /** 用规则电脑把整局跑一遍，每一步都检查大模型候选动作是否全部合法 */
@@ -67,6 +70,10 @@ describe('大模型接管：候选动作', () => {
     for (let seed = 1; seed <= 6; seed++)
       expect(checkPrompts(doudizhu, 3, { baseScore: 1, rounds: 1 }, seed)).toBeGreaterThan(10);
   });
+  it('西游记', () => {
+    for (let seed = 1; seed <= 4; seed++)
+      expect(checkPrompts(xiyouji, 4, { rounds: 1 }, seed)).toBeGreaterThan(10);
+  });
   it('掼蛋', () => {
     for (let seed = 1; seed <= 3; seed++)
       expect(
@@ -110,6 +117,16 @@ describe('大模型接管：候选动作', () => {
   });
   it('中国象棋', () => {
     expect(checkPrompts(xiangqi, 2, { level: 1, side: 'r' }, 2, 160)).toBeGreaterThan(20);
+  });
+  it('双升', { timeout: 60000 }, () => {
+    for (let seed = 1; seed <= 3; seed++)
+      expect(checkPrompts(shuangsheng, 4, { startLevel: 2 }, seed, 3000)).toBeGreaterThan(30);
+  });
+  it('河洛杠次', () => {
+    for (let seed = 1; seed <= 4; seed++)
+      expect(
+        checkPrompts(heluogangci, 4, { ...heluogangci.defaultOptions, rounds: 1 }, seed),
+      ).toBeGreaterThan(20);
   });
   it('比大小', () => {
     expect(checkPrompts(highcard, 4, { rounds: 1 }, 3)).toBeGreaterThan(5);
