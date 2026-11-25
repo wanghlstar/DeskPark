@@ -5,7 +5,17 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   // public/engines：第三方棋类引擎的构建产物（GPL-3.0），原样分发，不做检查
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', 'apps/web/public/engines/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/coverage/**',
+      'apps/web/public/engines/**',
+      'apps/web/android/**',
+      // 自动生成的量化模型数据，避免解析超长权重表达式时栈溢出
+      'packages/engine/src/games/sichuan/coach/oppnet-weights.ts',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
