@@ -36,6 +36,13 @@ export function serverUrl(): string {
   return `${proto}://${location.host}/ws`;
 }
 
+/** 与联机服务器同源的 HTTP 接口地址。 */
+export function serverHttpUrl(): string {
+  const url = new URL(serverUrl(), location.href);
+  url.protocol = url.protocol === 'wss:' ? 'https:' : 'http:';
+  return url.origin;
+}
+
 export function vibrate(ms = 12): void {
   try {
     navigator.vibrate?.(ms);

@@ -1,19 +1,47 @@
 [
   {
-    "stepTitle": "本地 AI 转发",
+    "stepTitle": "服务器默认 AI（可选）",
     "items": [
+      {
+        "type": "tips",
+        "helpText": "填写后，玩家在网页「设置 → AI 人机」选择「服务器默认」即可使用，也可选择自定义。全部留空可不用 AI；只填地址时保留自定义 AI 转发。保存会重启正在运行的应用，当前联机房间会结束。"
+      },
+      {
+        "type": "select",
+        "field": "wizard_ai_protocol",
+        "label": "接口协议",
+        "initValue": "openai",
+        "options": [
+          { "label": "OpenAI 兼容", "value": "openai" },
+          { "label": "Anthropic", "value": "anthropic" }
+        ]
+      },
       {
         "type": "text",
         "field": "wizard_ai_target",
-        "label": "本地 AI 接口（可选）",
+        "label": "AI 接口地址（可选）",
         "initValue": "",
-        "helpText": "填写允许转发的完整接口地址，例如 http://127.0.0.1:19020/v1。网页中填写同一地址并开启「经服务器转发」。留空关闭本地 AI 转发；保存会重启正在运行的服务，当前联机房间会结束。",
+        "helpText": "OpenAI 兼容示例：http://192.168.2.8:19020/v1；Anthropic 示例：https://api.anthropic.com。完整地址也会用于允许玩家转发自己的配置。",
         "rules": [
           {
             "pattern": "^(https?://[^\\s?#@]+)?$",
             "message": "请填写 http:// 或 https:// 接口地址，不含账号密码、查询参数或片段；也可留空"
           }
         ]
+      },
+      {
+        "type": "password",
+        "field": "wizard_ai_key",
+        "label": "API Key（可选）",
+        "initValue": "",
+        "helpText": "真实 Key 由服务器保存并用于默认模型，不下发给网页。不需要鉴权的 AI 接口可留空。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_ai_model",
+        "label": "默认模型 ID（可选）",
+        "initValue": "",
+        "helpText": "填写 AI 服务实际提供的模型 ID。地址和模型均已填写时启用服务器默认 AI；清空模型可关闭。"
       }
     ]
   }

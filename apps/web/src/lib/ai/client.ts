@@ -1,5 +1,5 @@
-import { serverUrl } from '../platform';
-import { effectiveAi } from './settings';
+import { serverHttpUrl } from '../platform';
+import { effectiveAi, serverAi } from './settings';
 
 export interface CompleteRequest {
   system: string;
@@ -8,10 +8,8 @@ export interface CompleteRequest {
 }
 
 /** 本站服务器的 AI 转发入口（与联机服务器同源） */
-function proxyBase(kind: 'anthropic' | 'openai'): string {
-  const ws = new URL(serverUrl(), location.href);
-  ws.protocol = ws.protocol === 'wss:' ? 'https:' : 'http:';
-  return `${ws.origin}/api/ai-proxy/${kind}`;
+function proxyBase(kind: 'anthropic' | 'openai', useDefault = false): string {
+  return `${serverHttpUrl()}/api/ai-proxy/${useDefault ? 'default/' : ''}${kind}`;
 }
 
 /** 支持 effort 参数的 Claude 型号（较老的型号传 effort 会报错） */
@@ -24,6 +22,8 @@ export class AiError extends Error {}
 /** 发起一次补全，返回模型输出的文字 */
 export async function complete(req: CompleteRequest): Promise<string> {
   const cfg = effectiveAi();
+  if (cfg.source === 'server' && !serverAi.get().configured)
+    throw new AiError('服务器尚未配置默认 AI，请选择自定义或联系管理员');
   return cfg.protocol === 'anthropic' ? completeAnthropic(cfg, req) : completeOpenAI(cfg, req);
 }
 
@@ -33,11 +33,13 @@ async function completeAnthropic(
 ): Promise<string> {
   // 只有选择 Anthropic 格式时才加载 SDK
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const useDefault = cfg.source === 'server';
   const client = new Anthropic({
-    apiKey: cfg.apiKey.trim(),
-    baseURL: cfg.proxy ? proxyBase('anthropic') : cfg.baseUrl,
-    defaultHeaders: cfg.proxy ? { 'x-ai-target': cfg.baseUrl } : undefined,
-    // 用户自己的 Key、只存在本机浏览器：允许浏览器直连
+    // SDK 要求非空 Key；默认模式只传占位值，真实鉴权由服务器填写。
+    apiKey: useDefault ? 'server-default' : cfg.apiKey.trim(),
+    baseURL: cfg.proxy ? proxyBase('anthropic', useDefault) : cfg.baseUrl,
+    defaultHeaders: cfg.proxy && !useDefault ? { 'x-ai-target': cfg.baseUrl } : undefined,
+    // 自定义 Key 只保存在本机浏览器，允许按用户设置直连。
     dangerouslyAllowBrowser: true,
     maxRetries: 1,
     timeout: 60_000,
@@ -85,7 +87,7 @@ async function completeOpenAI(
   req: CompleteRequest,
 ): Promise<string> {
   const url = cfg.proxy
-    ? `${proxyBase('openai')}/chat/completions`
+    ? `${proxyBase('openai', cfg.source === 'server')}/chat/completions`
     : `${cfg.baseUrl}/chat/completions`;
   const messages = [
     { role: 'system', content: req.system },
@@ -97,8 +99,8 @@ async function completeOpenAI(
       signal: req.signal,
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${cfg.apiKey.trim()}`,
-        ...(cfg.proxy ? { 'x-ai-target': cfg.baseUrl } : {}),
+        ...(cfg.source === 'custom' ? { authorization: `Bearer ${cfg.apiKey.trim()}` } : {}),
+        ...(cfg.proxy && cfg.source === 'custom' ? { 'x-ai-target': cfg.baseUrl } : {}),
       },
       body: JSON.stringify({ model: cfg.model, messages, ...body }),
     });

@@ -170,3 +170,76 @@ test('飞牛配置将本地 AI 地址用于转发，配置更新后生效且不�
   assert.equal(configured.code, 0, configured.stderr);
   assert.equal((await post()).status, 400);
 });
+
+test('安装与应用设置包含可留空的默认 AI 配置，Key 使用密码字段，应用说明写清入口', () => {
+  for (const wizard of ['install', 'config']) {
+    const steps = JSON.parse(readFileSync(join(pack, 'wizard', wizard), 'utf8'));
+    const fields = steps.flatMap((step) => step.items);
+    for (const name of ['protocol', 'target', 'key', 'model']) {
+      const field = fields.find((item) => item.field === `wizard_ai_${name}`);
+      assert.ok(field, `${wizard} 缺少 AI ${name} 配置`);
+      assert.ok(!field.rules?.some((rule) => rule.required), `${name} 应可留空`);
+      if (name === 'key') assert.equal(field.type, 'password');
+      if (name === 'protocol') {
+        assert.equal(field.initValue, 'openai');
+        assert.deepEqual(
+          field.options.map((option) => option.value),
+          ['openai', 'anthropic'],
+        );
+      } else assert.equal(field.initValue, '');
+    }
+  }
+  assert.match(readFileSync(join(pack, 'manifest'), 'utf8'), /应用中心.*设置.*模型/);
+});
+
+test('飞牛默认 AI 使用后台模型和 Key，应用设置重启后生效且清空模型可关闭', async (t) => {
+  const { env, url } = await fixture(t);
+  const received = [];
+  const ai = createHttpServer(async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += String(chunk);
+    received.push({
+      path: req.url,
+      authorization: req.headers.authorization,
+      body: JSON.parse(body),
+    });
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ choices: [{ message: { content: '你好' } }] }));
+  }).listen(0, '127.0.0.1');
+  await once(ai, 'listening');
+  t.after(() => new Promise((resolve) => ai.close(resolve)));
+  env.wizard_ai_target = `http://127.0.0.1:${ai.address().port}/v1`;
+  env.wizard_ai_protocol = 'openai';
+  env.wizard_ai_key = 'fpk-server-key';
+  env.wizard_ai_model = 'fpk-default-model';
+  const started = await invoke('start', env);
+  assert.equal(started.code, 0, started.stderr);
+  const get = () => fetch(`${url}/api/ai-proxy/default`).then((res) => res.json());
+  assert.deepEqual(await get(), {
+    configured: true,
+    protocol: 'openai',
+    model: 'fpk-default-model',
+  });
+  const post = () =>
+    fetch(`${url}/api/ai-proxy/default/openai/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'ignored-player-model',
+        messages: [{ role: 'user', content: '你好' }],
+      }),
+    });
+  let response = await post();
+  assert.equal(response.status, 200);
+  assert.equal(received.at(-1).authorization, 'Bearer fpk-server-key');
+  assert.equal(received.at(-1).body.model, 'fpk-default-model');
+  assert.equal(received.at(-1).path, '/v1/chat/completions');
+  env.wizard_ai_model = 'updated-default-model';
+  assert.equal((await invoke('config_callback', env)).code, 0);
+  assert.equal((await get()).model, 'updated-default-model');
+  env.wizard_ai_model = '';
+  assert.equal((await invoke('config_callback', env)).code, 0);
+  assert.deepEqual(await get(), { configured: false });
+  response = await post();
+  assert.equal(response.status, 503);
+});

@@ -27,6 +27,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/ws': { target: `ws://localhost:${serverPort}`, ws: true },
+      '/api/ai-proxy': { target: `http://localhost:${serverPort}` },
     },
   },
   build: {

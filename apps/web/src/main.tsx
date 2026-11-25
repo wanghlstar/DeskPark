@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { toast } from './components/ui';
+import { loadServerAi } from './lib/ai/settings';
 import { isOfflineShell, openRemoteIfOnline } from './lib/appShell';
 import { loadCharacters } from './lib/characters';
 import './styles/tokens.css';
@@ -13,6 +14,7 @@ import './screens/table.css';
 
 function start(): void {
   void loadCharacters();
+  void loadServerAi();
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />

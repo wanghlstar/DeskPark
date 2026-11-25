@@ -18,19 +18,52 @@
             "message": "请输入 1024–65535 之间的整数端口"
           }
         ]
+      }
+    ]
+  },
+  {
+    "stepTitle": "服务器默认 AI（可选）",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "无需 AI 可留空，以后可在「应用中心 → 闲亭 DeskPark → 设置」修改。填写地址和模型后，玩家在网页「设置 → AI 人机」选择「服务器默认」即可使用；玩家仍可配置自己的 AI。"
+      },
+      {
+        "type": "select",
+        "field": "wizard_ai_protocol",
+        "label": "接口协议",
+        "initValue": "openai",
+        "options": [
+          { "label": "OpenAI 兼容", "value": "openai" },
+          { "label": "Anthropic", "value": "anthropic" }
+        ]
       },
       {
         "type": "text",
         "field": "wizard_ai_target",
-        "label": "本地 AI 接口（可选）",
+        "label": "AI 接口地址（可选）",
         "initValue": "",
-        "helpText": "填写允许转发的完整接口地址，例如 http://127.0.0.1:19020/v1。无需填写 Key；留空只允许公网接口。",
+        "helpText": "OpenAI 兼容示例：http://192.168.2.8:19020/v1；Anthropic 示例：https://api.anthropic.com。只填地址、不填模型时，沿用旧版本的自定义 AI 转发。",
         "rules": [
           {
             "pattern": "^(https?://[^\\s?#@]+)?$",
             "message": "请填写 http:// 或 https:// 接口地址，不含账号密码、查询参数或片段；也可留空"
           }
         ]
+      },
+      {
+        "type": "password",
+        "field": "wizard_ai_key",
+        "label": "API Key（可选）",
+        "initValue": "",
+        "helpText": "真实 Key 由服务器保存并用于默认模型，不下发给网页。不需要鉴权的 AI 接口可留空。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_ai_model",
+        "label": "默认模型 ID（可选）",
+        "initValue": "",
+        "helpText": "填写 AI 服务实际提供的模型 ID，例如 qwen-plus、deepseek-chat。地址和模型均已填写时启用服务器默认 AI；清空模型可关闭。"
       }
     ]
   }

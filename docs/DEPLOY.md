@@ -116,6 +116,10 @@ docker compose -f docker-compose.yml -f deploy/docker-compose.https.yml up -d
 | `TURN_TIMEOUT_MS`          | `30000`                              | 联机时每一步的时限，超时由电脑代打                                        |
 | `AI_PROXY`                 | 开启                                 | 设为 `off` 关闭 AI 接口转发（见下方「AI 人机」）                          |
 | `AI_PROXY_ALLOWED_TARGETS` | 空                                   | 部署者允许转发的完整 AI 基址，多个用逗号分隔，支持 HTTP、内网和自定义端口 |
+| `AI_DEFAULT_PROTOCOL`      | `openai`                             | 服务器默认模型的协议：`openai` 或 `anthropic`                             |
+| `AI_DEFAULT_BASE_URL`      | 空                                   | 服务器默认 AI 完整基址，支持 HTTP、内网和自定义端口                       |
+| `AI_DEFAULT_API_KEY`       | 空                                   | 服务器默认 AI 的 Key，仅在服务端使用；无需鉴权时可留空                    |
+| `AI_DEFAULT_MODEL`         | 空                                   | 服务器默认模型 ID，与地址均已填写时启用                                   |
 | `TRUST_PROXY`              | 空                                   | 部署在反向代理之后时设为 `1`，按 X-Forwarded-For 识别真实 IP              |
 | `MAX_CONN_PER_IP`          | `20`                                 | 每个 IP 同时的联机连接数上限                                              |
 | `DESKPARK_IMAGE`           | `ghcr.io/wanghlstar/deskpark:latest` | 使用的镜像与版本                                                          |
@@ -125,17 +129,29 @@ docker compose -f docker-compose.yml -f deploy/docker-compose.https.yml up -d
 
 ### AI 人机与接口转发
 
-AI 人机由玩家在网页「设置 → AI 人机」中填写自己的接口与 Key，Key 只保存在玩家的浏览器里。
-浏览器直连接口被跨域（CORS）拦截时，玩家可以开启「经服务器转发」，由本服务器的 `/api/ai-proxy/` 原样转发：
+玩家在网页「设置 → AI 人机」中选择 **服务器默认** 或 **自定义**。部署者提供默认模型时，玩家可直接使用；也可填写自己的接口、Key 和模型。切换来源会保留自定义配置。
+
+服务器默认 AI 由以下环境变量配置，例如：
+
+```dotenv
+AI_DEFAULT_PROTOCOL=openai
+AI_DEFAULT_BASE_URL=http://192.168.2.8:19020/v1
+AI_DEFAULT_API_KEY=你的实际Key
+AI_DEFAULT_MODEL=你的实际模型ID
+```
+
+地址和模型均已填写才启用；无需鉴权时 Key 可空。默认调用由服务器携带 Key，请求固定发送到后台配置的地址并使用后台模型；网页只读取是否可用、协议和模型，不获取地址或 Key。修改 `.env` 后运行 `docker compose up -d` 生效。原生 Node 部署在启动进程前设置同名变量。飞牛可在安装时或 **应用中心 → 闲亭 DeskPark → 设置** 中填写，详见 [飞牛指南](./FNOS.md)。
+
+自定义配置的 Key 只保存在玩家浏览器里。浏览器直连被跨域（CORS）拦截时，开启「经服务器转发」，由本服务器的 `/api/ai-proxy/` 原样转发；此开关仍使用玩家自己的配置：
 
 - 只转发 Anthropic `/v1/messages` 与 OpenAI 兼容 `/chat/completions` 两个端点；
 - 默认目标必须是 https 公网域名（拒绝 IP、localhost 与解析到内网的域名），有请求大小、超时与每 IP 频率限制；
 - 部署者可用 `AI_PROXY_ALLOWED_TARGETS` 指定完整的本地 AI 基址，只放行所列协议、主机、端口及路径，不接受通配符；
-- 不记录、不保存任何 Key 与内容。
+- 不记录请求内容；自定义调用不保存玩家 Key，默认模型的 Key 由部署者管理。
 
-不需要这个功能时，在 `.env` 中设置 `AI_PROXY=off`。
+设置 `AI_PROXY=off` 可同时关闭服务器默认 AI 与自定义转发。
 
-例如访问 NAS 上的 OpenAI 兼容服务，在 `.env` 中设置 `AI_PROXY_ALLOWED_TARGETS=http://192.168.2.8:19020/v1`，执行 `docker compose up -d` 应用配置。原生 Node 部署则在启动进程的环境中设置同名变量；飞牛 FPK 可直接使用应用设置中的「本地 AI 接口」。玩家在网页里填写同一地址、有效 Key 与模型，并开启「经服务器转发」。
+例如允许玩家转发到 NAS 上的接口，在 `.env` 设置 `AI_PROXY_ALLOWED_TARGETS=http://192.168.2.8:19020/v1`。玩家填写同一地址、自己的有效 Key 与模型，并开启「经服务器转发」。默认模型的地址不会自动加入此允许列表；飞牛向导中的地址字段同时用于这两种配置，以兼容旧版。
 
 关闭转发时，AI 请求直接由玩家浏览器发出，服务需允许页面来源的 CORS 预检；开启时由部署端连接 AI。单人 AI 接管的局面组织和模型结果处理在浏览器完成；联机房间中的电脑和托管由服务器执行内置规则策略。
 

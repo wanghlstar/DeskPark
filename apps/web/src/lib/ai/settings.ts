@@ -1,12 +1,16 @@
+import { useSyncExternalStore } from 'react';
+import { serverHttpUrl } from '../platform';
 import { createStore } from '../store';
 
 /**
- * AI 人机设置：只保存在本机浏览器（localStorage），请求由浏览器直接发往用户填写的接口，
- * 或在开启「经服务器转发」时由本站服务器转发（服务器不保存 Key）。
+ * 自定义配置保存在本机浏览器；服务器默认模型只读取公开信息，Key 由服务器携带。
  */
 export type AiProtocol = 'anthropic' | 'openai';
+export type AiSource = 'server' | 'custom';
 
 export interface AiSettings {
+  /** 旧版没有此字段：已有自定义配置继续沿用，新设备优先使用可用的服务器默认模型。 */
+  source?: AiSource;
   protocol: AiProtocol;
   baseUrl: string;
   apiKey: string;
@@ -31,11 +35,80 @@ export const AI_DEFAULTS: Record<AiProtocol, { baseUrl: string; model: string }>
   openai: { baseUrl: 'https://api.openai.com/v1', model: '' },
 };
 
+interface ServerAi {
+  configured: boolean;
+  protocol: AiProtocol;
+  model: string;
+}
+
+const unavailable: ServerAi = { configured: false, protocol: 'openai', model: '' };
+let serverConfig: ServerAi = unavailable;
+const listeners = new Set<() => void>();
+
+/** 只保存在内存中，刷新或打开设置时重新读取。 */
+export const serverAi = {
+  get: () => serverConfig,
+  set(value: ServerAi) {
+    serverConfig = value;
+    listeners.forEach((l) => l());
+  },
+  subscribe(l: () => void) {
+    listeners.add(l);
+    return () => listeners.delete(l);
+  },
+  use(): ServerAi {
+    return useSyncExternalStore(this.subscribe, this.get, this.get);
+  },
+};
+
+export async function loadServerAi(): Promise<void> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5_000);
+  try {
+    const res = await fetch(`${serverHttpUrl()}/api/ai-proxy/default`, {
+      cache: 'no-store',
+      signal: ctrl.signal,
+    });
+    if (!res.ok) throw new Error('无法读取服务器默认模型');
+    const data = (await res.json()) as Partial<ServerAi>;
+    serverAi.set(
+      data.configured === true &&
+        (data.protocol === 'openai' || data.protocol === 'anthropic') &&
+        typeof data.model === 'string' &&
+        data.model.trim()
+        ? { configured: true, protocol: data.protocol, model: data.model.trim() }
+        : unavailable,
+    );
+  } catch {
+    serverAi.set(unavailable);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** 填了默认值之后的实际配置 */
 export function effectiveAi(s: AiSettings = aiSettings.get()) {
+  const server = serverAi.get();
+  const source: AiSource =
+    s.source ??
+    (s.apiKey.trim() || s.model.trim() || s.baseUrl.trim() || !server.configured
+      ? 'custom'
+      : 'server');
+  if (source === 'server') {
+    return {
+      ...s,
+      source,
+      protocol: server.protocol,
+      baseUrl: '',
+      apiKey: '',
+      model: server.model,
+      proxy: true,
+    };
+  }
   const d = AI_DEFAULTS[s.protocol];
   return {
     ...s,
+    source,
     baseUrl: (s.baseUrl.trim() || d.baseUrl).replace(/\/+$/, ''),
     model: s.model.trim() || d.model,
   };
@@ -43,6 +116,7 @@ export function effectiveAi(s: AiSettings = aiSettings.get()) {
 
 export function aiReady(s: AiSettings = aiSettings.get()): boolean {
   const e = effectiveAi(s);
+  if (e.source === 'server') return serverAi.get().configured;
   return !!e.apiKey.trim() && !!e.model;
 }
 

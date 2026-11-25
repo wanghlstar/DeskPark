@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Field, Segmented, Sheet, Switch, toast } from '../components/ui';
 import { testConnection } from '../lib/ai/agent';
-import type { AiProtocol } from '../lib/ai/settings';
-import { AI_DEFAULTS, aiSettings } from '../lib/ai/settings';
+import type { AiProtocol, AiSource } from '../lib/ai/settings';
+import {
+  AI_DEFAULTS,
+  aiReady,
+  aiSettings,
+  effectiveAi,
+  loadServerAi,
+  serverAi,
+} from '../lib/ai/settings';
 import { Avatar } from '../components/Seat';
 import type { AvatarTheme } from '../components/pixel/characters';
 import { CHARACTERS, THEME_NAME, getCharacter } from '../components/pixel/characters';
@@ -167,9 +174,11 @@ function AvatarSection() {
   );
 }
 
-/** AI 人机：接口设置（只保存在本机浏览器） */
+/** AI 人机：服务器默认模型与本机自定义接口。 */
 function AiSection() {
   const a = aiSettings.use();
+  const server = serverAi.use();
+  const source = effectiveAi(a).source;
   const d = AI_DEFAULTS[a.protocol];
   const [testing, setTesting] = useState(false);
   const test = async () => {
@@ -189,44 +198,82 @@ function AiSection() {
         <span>AI 人机</span>
         <small>点电脑玩家头像上方的 ✨ 唤醒，由大模型接管它出牌和聊天</small>
       </div>
-      <Segmented<AiProtocol>
-        value={a.protocol}
-        onChange={(protocol) => aiSettings.set({ protocol })}
+      <Segmented<AiSource>
+        value={source}
+        onChange={(source) => aiSettings.set({ source })}
         options={[
-          { value: 'anthropic', label: 'Anthropic' },
-          { value: 'openai', label: 'OpenAI 兼容' },
+          { value: 'server', label: '服务器默认' },
+          { value: 'custom', label: '自定义' },
         ]}
       />
-      <label className="ai-input">
-        <span>接口地址</span>
-        <input
-          value={a.baseUrl}
-          placeholder={d.baseUrl}
-          onChange={(e) => aiSettings.set({ baseUrl: e.target.value })}
-          spellCheck={false}
-          inputMode="url"
-        />
-      </label>
-      <label className="ai-input">
-        <span>API Key</span>
-        <input
-          type="password"
-          value={a.apiKey}
-          placeholder={a.protocol === 'anthropic' ? 'sk-ant-…' : 'sk-…'}
-          onChange={(e) => aiSettings.set({ apiKey: e.target.value })}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </label>
-      <label className="ai-input">
-        <span>模型</span>
-        <input
-          value={a.model}
-          placeholder={d.model || '例如 deepseek-chat、qwen-plus'}
-          onChange={(e) => aiSettings.set({ model: e.target.value })}
-          spellCheck={false}
-        />
-      </label>
+      {source === 'server' ? (
+        <p className="field__note">
+          {server.configured ? (
+            <>
+              <strong>
+                {server.protocol === 'anthropic' ? 'Anthropic' : 'OpenAI 兼容'} · {server.model}
+              </strong>
+              <br />
+              由服务器使用后台配置的地址和 Key 调用，无需在此填写。
+            </>
+          ) : (
+            <>
+              服务器尚未配置默认 AI。飞牛管理员可在「应用中心 → 闲亭 DeskPark →
+              设置」填写协议、地址、Key 和模型；也可切换为自定义。
+            </>
+          )}
+        </p>
+      ) : (
+        <>
+          <Segmented<AiProtocol>
+            value={a.protocol}
+            onChange={(protocol) => aiSettings.set({ protocol })}
+            options={[
+              { value: 'anthropic', label: 'Anthropic' },
+              { value: 'openai', label: 'OpenAI 兼容' },
+            ]}
+          />
+          <label className="ai-input">
+            <span>接口地址</span>
+            <input
+              value={a.baseUrl}
+              placeholder={d.baseUrl}
+              onChange={(e) => aiSettings.set({ baseUrl: e.target.value })}
+              spellCheck={false}
+              inputMode="url"
+            />
+          </label>
+          <label className="ai-input">
+            <span>API Key</span>
+            <input
+              type="password"
+              value={a.apiKey}
+              placeholder={a.protocol === 'anthropic' ? 'sk-ant-…' : 'sk-…'}
+              onChange={(e) => aiSettings.set({ apiKey: e.target.value })}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          <label className="ai-input">
+            <span>模型</span>
+            <input
+              value={a.model}
+              placeholder={d.model || '例如 deepseek-chat、qwen-plus'}
+              onChange={(e) => aiSettings.set({ model: e.target.value })}
+              spellCheck={false}
+            />
+          </label>
+          <div className="ai-row">
+            <span>
+              经服务器转发
+              <small>
+                仅转发你填写的配置；内网接口需先由管理员允许，开启后仍使用你自己的模型和 Key
+              </small>
+            </span>
+            <Switch checked={a.proxy} onChange={(proxy) => aiSettings.set({ proxy })} />
+          </div>
+        </>
+      )}
       <div className="ai-row">
         <span>发言</span>
         <Segmented<number>
@@ -240,19 +287,13 @@ function AiSection() {
           ]}
         />
       </div>
-      <div className="ai-row">
-        <span>
-          经服务器转发
-          <small>由部署端连接 AI；内网接口需先在飞牛应用设置或服务器配置中允许该地址</small>
-        </span>
-        <Switch checked={a.proxy} onChange={(proxy) => aiSettings.set({ proxy })} />
-      </div>
-      <Button variant="secondary" size="sm" onClick={test} disabled={testing || !a.apiKey.trim()}>
+      <Button variant="secondary" size="sm" onClick={test} disabled={testing || !aiReady(a)}>
         {testing ? '测试中…' : '测试连接'}
       </Button>
       <p className="field__note">
-        Key
-        只保存在这台设备的浏览器里；对局信息只发给你填写的接口（开启转发时经本站服务器中转，服务器不保存）。
+        {source === 'server'
+          ? '服务器默认模型的 Key 保留在服务器；单人对局仍由这台设备组织局面并提交 AI 请求。'
+          : '自定义 Key 只保存在这台设备的浏览器里；对局信息发给你填写的接口，开启转发时经服务器中转。'}
       </p>
     </div>
   );
@@ -269,6 +310,9 @@ export function SettingsSheet({
 }) {
   const s = settings.use();
   const hasFigures = useCharacters().length > 0;
+  useEffect(() => {
+    if (open && showProfile) void loadServerAi();
+  }, [open, showProfile]);
   return (
     <Sheet open={open} onClose={onClose} title={showProfile ? '设置' : '外观'}>
       {showProfile && (

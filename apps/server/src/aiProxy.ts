@@ -14,14 +14,15 @@ import { clientIp } from './net';
  * 安全约束：
  * - 只转发两个固定端点：Anthropic `/v1/messages` 与 OpenAI 兼容 `/chat/completions`；
  * - 默认仅允许 https 公网域名；管理员可用 AI_PROXY_ALLOWED_TARGETS 指定完整的本地接口基址；
- * - 限制请求体大小、超时与每个 IP 的频率；不记录、不保存任何 Key。
+ * - 限制请求体大小、超时与每个 IP 的频率；不记录 Key，自定义调用不保存 Key；
+ * - 默认模型使用部署者配置的固定地址、模型和 Key，公开配置不包含地址或 Key。
  * 设置环境变量 AI_PROXY=off 可关闭。
  */
 
 const ROUTES = {
   anthropic: {
     path: '/v1/messages',
-    headers: ['x-api-key', 'anthropic-version', 'anthropic-beta'],
+    headers: ['x-api-key', 'authorization', 'anthropic-version', 'anthropic-beta'],
   },
   openai: { path: '/chat/completions', headers: ['authorization'] },
 } as const;
@@ -34,6 +35,27 @@ const RATE_PER_MIN = 40;
 
 export const aiProxyEnabled = () => process.env.AI_PROXY !== 'off';
 export const isAiProxyPath = (url: string | undefined) => !!url && url.startsWith(PREFIX);
+
+function defaultAi() {
+  const protocol = process.env.AI_DEFAULT_PROTOCOL?.trim() || 'openai';
+  const model = process.env.AI_DEFAULT_MODEL?.trim();
+  if (!aiProxyEnabled() || !model || (protocol !== 'openai' && protocol !== 'anthropic'))
+    return null;
+  try {
+    const target = new URL(process.env.AI_DEFAULT_BASE_URL?.trim() ?? '');
+    if (
+      !['http:', 'https:'].includes(target.protocol) ||
+      target.username ||
+      target.password ||
+      target.search ||
+      target.hash
+    )
+      return null;
+    return { protocol, model, target, apiKey: process.env.AI_DEFAULT_API_KEY?.trim() ?? '' };
+  } catch {
+    return null;
+  }
+}
 
 const hits = new Map<string, { start: number; n: number }>();
 
@@ -115,7 +137,11 @@ export async function checkTarget(raw: string | undefined): Promise<URL> {
 }
 
 function send(res: ServerResponse, status: number, body: unknown, cors: Record<string, string>) {
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', ...cors });
+  res.writeHead(status, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    ...cors,
+  });
   res.end(JSON.stringify(body));
 }
 
@@ -140,7 +166,7 @@ function readBody(req: IncomingMessage): Promise<Buffer> {
 export async function handleAiProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const cors: Record<string, string> = {
     'access-control-allow-origin': '*',
-    'access-control-allow-methods': 'POST, OPTIONS',
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-max-age': '600',
   };
   if (req.method === 'OPTIONS') {
@@ -149,11 +175,24 @@ export async function handleAiProxy(req: IncomingMessage, res: ServerResponse): 
     res.end();
     return;
   }
+  let rest = (req.url ?? '').slice(PREFIX.length).split('?')[0];
+  if (rest === 'default' && req.method === 'GET') {
+    const config = defaultAi();
+    return send(
+      res,
+      200,
+      config
+        ? { configured: true, protocol: config.protocol, model: config.model }
+        : { configured: false },
+      cors,
+    );
+  }
   if (!aiProxyEnabled())
     return send(res, 404, { error: { message: '本服务器未开启 AI 转发' } }, cors);
   if (req.method !== 'POST') return send(res, 405, { error: { message: '只支持 POST' } }, cors);
 
-  const rest = (req.url ?? '').slice(PREFIX.length).split('?')[0];
+  const useDefault = rest.startsWith('default/');
+  if (useDefault) rest = rest.slice('default/'.length);
   const kind = rest.split('/')[0] as keyof typeof ROUTES;
   const route = ROUTES[kind];
   if (!route || `/${rest.slice(kind.length + 1)}` !== route.path) {
@@ -162,25 +201,56 @@ export async function handleAiProxy(req: IncomingMessage, res: ServerResponse): 
   const ip = clientIp(req);
   if (rateLimited(ip)) return send(res, 429, { error: { message: '转发请求太频繁' } }, cors);
 
+  const config = useDefault ? defaultAi() : null;
+  if (useDefault && !config)
+    return send(
+      res,
+      503,
+      { error: { message: '服务器尚未配置默认 AI，请选择自定义或联系管理员' } },
+      cors,
+    );
+  if (config && config.protocol !== kind)
+    return send(
+      res,
+      400,
+      { error: { message: '服务器默认 AI 协议已更新，请刷新页面后重试' } },
+      cors,
+    );
+
   let target: URL;
   let body: Buffer;
   try {
-    target = await checkTarget(req.headers['x-ai-target'] as string | undefined);
+    target =
+      config?.target ?? (await checkTarget(req.headers['x-ai-target'] as string | undefined));
     body = await readBody(req);
+    if (config) {
+      const data: unknown = JSON.parse(body.toString());
+      if (!data || typeof data !== 'object' || Array.isArray(data))
+        throw new Error('请求体必须为 JSON 对象');
+      body = Buffer.from(JSON.stringify({ ...data, model: config.model, stream: false }));
+    }
   } catch (e) {
     return send(res, 400, { error: { message: (e as Error).message } }, cors);
   }
 
   const headers: Record<string, string> = { 'content-type': 'application/json' };
-  for (const h of route.headers) {
-    const v = req.headers[h];
-    if (typeof v === 'string') headers[h] = v;
+  if (config) {
+    if (kind === 'anthropic') headers['anthropic-version'] = '2023-06-01';
+    if (config.apiKey) {
+      if (kind === 'anthropic') headers['x-api-key'] = config.apiKey;
+      else headers.authorization = `Bearer ${config.apiKey}`;
+    }
+  } else {
+    for (const h of route.headers) {
+      const v = req.headers[h];
+      if (typeof v === 'string') headers[h] = v;
+    }
   }
   const path = `${target.pathname.replace(/\/+$/, '')}${route.path}`;
   try {
-    const r = await forward(target, path, headers, body);
-    res.writeHead(r.status, { 'content-type': r.type, ...cors });
-    res.end(r.body);
+    const r = await forward(target, path, headers, body, useDefault);
+    res.writeHead(r.status, { 'content-type': r.type, 'cache-control': 'no-store', ...cors });
+    res.end(config?.apiKey ? r.body.toString().replaceAll(config.apiKey, '[redacted]') : r.body);
   } catch (e) {
     const msg = (e as Error).message === 'too large' ? '上游响应过大' : '无法连接上游 AI 接口';
     send(res, 502, { error: { message: msg } }, cors);
@@ -208,6 +278,7 @@ function forward(
   path: string,
   headers: Record<string, string>,
   body: Buffer,
+  trustedTarget = false,
 ): Promise<{ status: number; type: string; body: Buffer }> {
   return new Promise((resolve, reject) => {
     const request = target.protocol === 'http:' ? httpRequest : httpsRequest;
@@ -218,7 +289,7 @@ function forward(
         path,
         method: 'POST',
         headers: { ...headers, 'content-length': String(body.length) },
-        lookup: allowedTarget(target) ? undefined : safeLookup,
+        lookup: trustedTarget || allowedTarget(target) ? undefined : safeLookup,
         timeout: TIMEOUT_MS,
       },
       (r) => {
