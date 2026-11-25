@@ -98,3 +98,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # 3) 把 README 同步为 Docker Hub 仓库说明（令牌需 Read, Write, Delete 权限）
+      - name: Docker Hub description
+        if: github.event_name != 'pull_request' && env.DOCKERHUB_USERNAME != '' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/deskpark
+          short-description: 闲亭 DeskPark：网页桌游平台，斗地主/掼蛋/双升/麻将，单机人机+多人联机
+          enable-url-completion: true
