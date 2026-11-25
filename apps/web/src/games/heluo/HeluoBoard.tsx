@@ -125,6 +125,17 @@ function pengFlipIndex(m: hl.HlMeld, owner: number): number {
   return rel === 1 ? m.tiles.length - 1 : rel === 2 ? 1 : rel === 3 ? 0 : -1;
 }
 
+/** 结算里的一张手牌：次牌金框 + 「次」角标 */
+function ResTile({ tile, ci, highlight }: { tile: Tile; ci: boolean; highlight?: boolean }) {
+  if (!ci) return <HlTileView tile={tile} w="var(--rw)" highlight={highlight} />;
+  return (
+    <span className="sc-handtile is-ci is-res">
+      <HlTileView tile={tile} w="var(--rw)" highlight={highlight} />
+      <span className="hl-ci-mark">次</span>
+    </span>
+  );
+}
+
 /** 总分 + 本盘杠分（荒庄作废，胡牌时计入） */
 function ScoreSub({ v, s }: { v: hl.HlView; s: number }) {
   const g = v.phase === 'play' ? v.gangDeltas[s] : 0;
@@ -690,19 +701,15 @@ function RoundResult({
             <div key={s} className="sc-res-hand">
               <span>{ctl.players[s].name}</span>
               <div>
-                {v.players[s].melds
-                  .flatMap((m) => m.tiles)
-                  .map((t) => (
-                    <HlTileView key={t.id} tile={t} w="var(--rw)" />
-                  ))}
+                <Melds melds={v.players[s].melds} w="var(--rw)" owner={s} />
                 {v.players[s].melds.length > 0 && <i className="sc-gap" />}
                 {r.hands[s].map((t) => (
-                  <HlTileView key={t.id} tile={t} w="var(--rw)" />
+                  <ResTile key={t.id} tile={t} ci={t.kind === v.ciKind} />
                 ))}
                 {r.win?.seat === s && r.win.tile && r.win.kind !== 'zimo' && (
                   <>
                     <i className="sc-gap" />
-                    <HlTileView tile={r.win.tile} w="var(--rw)" highlight />
+                    <ResTile tile={r.win.tile} ci={r.win.tile.kind === v.ciKind} highlight />
                   </>
                 )}
               </div>

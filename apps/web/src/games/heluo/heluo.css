@@ -212,3 +212,17 @@
 .hl-gangpts.is-minus {
   color: #ff8a80;
 }
+
+/* 结算手牌里的次牌角标缩小 */
+.sc-handtile.is-res {
+  display: inline-flex;
+}
+.sc-handtile.is-res .hl-ci-mark {
+  font-size: 9px;
+  padding: 1px 3px;
+  right: -4px;
+  top: -6px;
+}
+.sc-res-hand .sc-melds {
+  flex-wrap: nowrap;
+}
