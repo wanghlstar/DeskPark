@@ -107,14 +107,37 @@ function HlTileView({
 }
 
 /**
- * 碰牌标记：把来源方向的那张翻成背面，一眼看出碰的是谁。
- * 下家（出牌顺序下一位）翻最右，对家翻中间，上家翻最左；加杠后标记保留。
+ * 碰 / 明杠标记：把来源方向的那张翻成背面，一眼看出碰的、杠的是谁。
+ * 下家（出牌顺序下一位）翻最右，对家翻中间，上家翻最左；加杠后标记保留；
+ * 自己摸齐的暗杠不标。
  */
 function pengFlipIndex(m: hl.HlMeld, owner: number): number {
-  const from = m.type === 'pung' ? m.from : m.kongType === 'ba' ? m.pengFrom : null;
+  const from =
+    m.type === 'pung'
+      ? m.from
+      : m.kongType === 'ba'
+        ? m.pengFrom
+        : m.kongType === 'ming'
+          ? m.from
+          : null;
   if (from === null) return -1;
   const rel = (from - owner + 4) % 4;
   return rel === 1 ? m.tiles.length - 1 : rel === 2 ? 1 : rel === 3 ? 0 : -1;
+}
+
+/** 总分 + 本盘杠分（荒庄作废，胡牌时计入） */
+function ScoreSub({ v, s }: { v: hl.HlView; s: number }) {
+  const g = v.phase === 'play' ? v.gangDeltas[s] : 0;
+  return (
+    <span className="hl-scoresub">
+      <span className="num">{v.scores[s]}</span>
+      {g !== 0 && (
+        <span className={`hl-gangpts ${g > 0 ? 'is-plus' : 'is-minus'}`} title="本盘杠分，荒庄不算">
+          杠{signed(g)}
+        </span>
+      )}
+    </span>
+  );
 }
 
 function Melds({ melds, w, owner }: { melds: hl.HlMeld[]; w: string; owner: number }) {
@@ -310,7 +333,7 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
           size={54}
           layout={where === 'top' ? 'row' : 'column'}
           tag={s === v.dealer ? '庄' : undefined}
-          sub={<span className="num">{v.scores[s]}</span>}
+          sub={<ScoreSub v={v} s={s} />}
         />
         {p.won && <span className="sc-wonbadge">{WIN_NAME[p.won.kind]}</span>}
         <div className="sc-oppo">
@@ -404,7 +427,7 @@ export default function HeluoBoard({ ctl }: { ctl: Ctl }) {
             size={48}
             layout="row"
             tag={me === v.dealer ? '庄' : undefined}
-            sub={<span className="num">{v.scores[me]}</span>}
+            sub={<ScoreSub v={v} s={me} />}
           />
         </div>
         <div className="sc-actions">

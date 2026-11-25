@@ -186,6 +186,8 @@ export interface HlView {
   window: { source: Seat; tile: HlTile } | null;
   lastDiscard: { seat: Seat; id: number } | null;
   scores: number[];
+  /** 本盘目前的杠分（胡牌时计入，荒庄作废） */
+  gangDeltas: number[];
   roundDeltas: number[];
   result: HlResult | null;
   ready: boolean[];
@@ -723,6 +725,7 @@ export const heluogangci: GameDefinition<HlState, HlAction, HlView, HlOptions> =
       window: w && seat !== null && w.required[seat] ? { source: w.source, tile: w.tile } : null,
       lastDiscard: s.lastDiscard,
       scores: s.scores,
+      gangDeltas: s.gangDeltas,
       roundDeltas: s.result ? s.result.deltas : [0, 0, 0, 0],
       result: s.result,
       ready: s.ready,

@@ -191,3 +191,24 @@
     0 0 0 4px var(--gold, #d4a24a),
     0 0 32px 8px rgba(214, 88, 64, 0.6);
 }
+
+/* 本盘杠分（未结算，荒庄作废） */
+.hl-scoresub {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.hl-gangpts {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+.hl-gangpts.is-plus {
+  color: #ffd166;
+}
+.hl-gangpts.is-minus {
+  color: #ff8a80;
+}
