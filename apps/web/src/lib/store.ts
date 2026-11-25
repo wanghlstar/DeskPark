@@ -30,6 +30,8 @@ export interface Settings {
   felt: FeltTheme;
   fourColor: boolean;
   sound: boolean;
+  music: boolean;
+  musicVolume: number;
   theme: ColorTheme;
   cardCounter: boolean;
   /** 虚拟形象模式：牌桌上所有人（包括电脑）以全身像素立绘显示 */
@@ -46,6 +48,8 @@ export const settings = createStore<Settings>('park.settings', {
   felt: 'jade',
   fourColor: false,
   sound: true,
+  music: true,
+  musicVolume: 0.2,
   theme: 'system',
   cardCounter: true,
   figures: false,

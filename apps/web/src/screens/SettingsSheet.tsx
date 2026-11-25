@@ -22,6 +22,7 @@ import type { FeltTheme } from '../lib/store';
 import { online } from '../lib/online';
 import { getServerAddress, serverUrl, setServerAddress } from '../lib/platform';
 import { testServerConnection } from '../lib/serverConnection';
+import { unlockBackgroundMusic } from '../lib/music';
 
 export const FELTS: { value: FeltTheme; label: string; color: string }[] = [
   { value: 'jade', label: '墨绿', color: '#2a6152' },
@@ -434,6 +435,31 @@ export function SettingsSheet({
       </Field>
       <Field label="音效">
         <Switch checked={s.sound} onChange={(v) => settings.set({ sound: v })} />
+      </Field>
+      <Field label="背景音乐" hint="原创小曲，随玩法切换；切到后台暂停">
+        <Switch
+          checked={s.music}
+          onChange={(music) => {
+            settings.set({ music });
+            unlockBackgroundMusic();
+          }}
+        />
+      </Field>
+      <Field label="音乐音量" hint={`${Math.round(s.musicVolume * 100)}%`}>
+        <input
+          className="music-volume"
+          type="range"
+          aria-label="音乐音量"
+          min="0"
+          max="100"
+          step="1"
+          value={Math.round(s.musicVolume * 100)}
+          disabled={!s.music}
+          onChange={(e) => {
+            settings.set({ musicVolume: Number(e.target.value) / 100 });
+            unlockBackgroundMusic();
+          }}
+        />
       </Field>
       <Field label="界面">
         <Segmented

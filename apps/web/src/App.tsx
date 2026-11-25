@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { ToastHost, toast } from './components/ui';
 import { useOnline } from './lib/online';
+import { useBackgroundMusic } from './lib/music';
 import { useRoute } from './lib/router';
 import { settings } from './lib/store';
 import { Home } from './screens/Home';
@@ -40,6 +41,10 @@ function useOnlineErrors() {
 
 export function App() {
   const route = useRoute();
+  const net = useOnline();
+  useBackgroundMusic(
+    route.name === 'play' ? route.gameId : route.name === 'room' ? net.room?.gameId : undefined,
+  );
   useThemeSync();
   useOnlineErrors();
   return (

@@ -1135,6 +1135,11 @@
   display: flex;
   justify-content: flex-end;
 }
+.music-volume {
+  width: min(180px, 42vw);
+  min-height: 32px;
+  accent-color: var(--accent);
+}
 @media (max-width: 520px) {
   .field:has(.segmented) {
     flex-direction: column;
