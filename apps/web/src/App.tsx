@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { ToastHost, toast } from './components/ui';
 import { useOnline } from './lib/online';
 import { useBackgroundMusic } from './lib/music';
+import { setTableLandscape } from './lib/platform';
 import { useRoute } from './lib/router';
 import { settings } from './lib/store';
 import { Home } from './screens/Home';
@@ -42,6 +43,22 @@ function useOnlineErrors() {
 export function App() {
   const route = useRoute();
   const net = useOnline();
+  const s = settings.use();
+  const atTable =
+    route.name === 'play' ||
+    (route.name === 'room' &&
+      route.code === net.room?.code &&
+      net.room.status !== 'waiting' &&
+      !!net.game);
+  useEffect(() => {
+    let active = true;
+    void setTableLandscape(s.tableLandscape && atTable).catch(() => {
+      if (active) toast('无法调整屏幕方向，请使用系统自动旋转', 'error');
+    });
+    return () => {
+      active = false;
+    };
+  }, [s.tableLandscape, atTable]);
   useBackgroundMusic(
     route.name === 'play' ? route.gameId : route.name === 'room' ? net.room?.gameId : undefined,
   );

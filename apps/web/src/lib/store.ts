@@ -38,6 +38,7 @@ export interface Settings {
   music: boolean;
   musicVolume: number;
   theme: ColorTheme;
+  tableLandscape: boolean;
   cardCounter: boolean;
   /** 虚拟形象模式：牌桌上所有人（包括电脑）以全身像素立绘显示 */
   figures: boolean;
@@ -60,6 +61,7 @@ export const settings = createStore<Settings>('park.settings', {
   music: true,
   musicVolume: 0.2,
   theme: 'system',
+  tableLandscape: false,
   cardCounter: true,
   figures: false,
   coach: false,

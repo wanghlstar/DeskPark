@@ -1,5 +1,5 @@
 appname=deskpark
-version=0.3.6
+version=0.3.7
 display_name=闲亭 DeskPark
 desc=网页桌游平台，支持扑克、麻将、棋类，可单人或联机。AI 可在安装时或「应用中心 → 闲亭 DeskPark → 设置」配置协议、地址、Key 和模型（可留空）；网页可选服务器默认或自定义。
 platform=all

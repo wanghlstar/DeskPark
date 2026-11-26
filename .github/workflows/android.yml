@@ -76,6 +76,8 @@ jobs:
           assert.equal(synced.android.allowMixedContent, true);
           const manifest = fs.readFileSync('android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml', 'utf8');
           assert.ok(manifest.includes('android:usesCleartextTraffic="true"'));
+          const plugins = JSON.parse(fs.readFileSync('android/app/src/main/assets/capacitor.plugins.json', 'utf8'));
+          assert.ok(plugins.some(p => p.classpath === 'com.capacitorjs.plugins.screenorientation.ScreenOrientationPlugin'));
           NODE
 
       - name: Gradle assembleDebug

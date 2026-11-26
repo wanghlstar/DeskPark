@@ -86,6 +86,31 @@ export function serverHttpUrl(): string {
   return url.origin;
 }
 
+interface OrientationBridge {
+  isPluginAvailable?: (name: string) => boolean;
+  nativePromise?: (plugin: string, method: string, options: unknown) => Promise<unknown>;
+}
+
+function orientationBridge(): OrientationBridge | null {
+  const cap = (globalThis as { Capacitor?: OrientationBridge }).Capacitor;
+  return cap?.nativePromise && cap.isPluginAvailable?.('ScreenOrientation') ? cap : null;
+}
+
+export function supportsTableLandscape(): boolean {
+  return orientationBridge() !== null;
+}
+
+/** 原生方向控制不要求网页全屏；解锁后恢复系统方向，而非强制竖屏。 */
+export async function setTableLandscape(landscape: boolean): Promise<void> {
+  const cap = orientationBridge();
+  if (!cap) return;
+  await cap.nativePromise!(
+    'ScreenOrientation',
+    landscape ? 'lock' : 'unlock',
+    landscape ? { orientation: 'landscape' } : {},
+  );
+}
+
 export function vibrate(ms = 12): void {
   try {
     navigator.vibrate?.(ms);

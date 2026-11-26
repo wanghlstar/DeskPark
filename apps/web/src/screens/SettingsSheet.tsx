@@ -20,7 +20,12 @@ import { figureHeight, findCharacter, useCharacters } from '../lib/characters';
 import { profile, settings } from '../lib/store';
 import type { FeltTheme } from '../lib/store';
 import { online } from '../lib/online';
-import { getServerAddress, serverUrl, setServerAddress } from '../lib/platform';
+import {
+  getServerAddress,
+  serverUrl,
+  setServerAddress,
+  supportsTableLandscape,
+} from '../lib/platform';
 import { testServerConnection } from '../lib/serverConnection';
 import { unlockBackgroundMusic } from '../lib/music';
 import { loadSpeechVoices, speak, stopSpeech } from '../lib/speech';
@@ -490,6 +495,20 @@ export function SettingsSheet({
           <AvatarSection />
         </>
       )}
+      <Field
+        label="牌桌强制横屏"
+        hint={
+          supportsTableLandscape()
+            ? '进入单人或联机牌桌自动横屏；关闭或返回大厅恢复系统方向'
+            : 'Android APK 内可用；浏览器请使用系统自动旋转，旧 APK 请升级'
+        }
+      >
+        <Switch
+          checked={s.tableLandscape}
+          disabled={!supportsTableLandscape()}
+          onChange={(tableLandscape) => settings.set({ tableLandscape })}
+        />
+      </Field>
       <AiSection />
       <PaceField value={s.botPace} onChange={(botPace) => settings.set({ botPace })} />
       <p className="field__note">
