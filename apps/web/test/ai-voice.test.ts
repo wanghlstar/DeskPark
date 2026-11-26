@@ -27,7 +27,7 @@ afterEach(() => {
 describe('AI 发言与朗读', () => {
   it('AI 气泡接入语音；关闭朗读仍然显示文字', () => {
     aiSpeech.say(1, '该我啦');
-    expect(speak).toHaveBeenCalledWith('该我啦', { interrupt: false });
+    expect(speak).toHaveBeenCalledWith('该我啦', { interrupt: false, channel: 'ai' });
     expect(aiSpeech.get()[1].text).toBe('该我啦');
     aiSettings.set({ readAloud: false });
     aiSpeech.say(2, '我先过');

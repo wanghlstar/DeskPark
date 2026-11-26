@@ -51,6 +51,14 @@ export const GAME_UIS: GameUI[] = [
     people: '3 人 · 48 张',
   },
   {
+    id: 'zhuoheia',
+    Board: lazy(() => import('./zhuoheia/BlackAceBoard')),
+    tint: ['#67747b', '#273d39'],
+    showcase: [c(1, 'S', 14), c(2, 'J', 17), c(3, 'S', 3)],
+    people: '3–8 人 · 河南玩法',
+    badge: '隐藏身份',
+  },
+  {
     id: 'guandan',
     Board: lazy(() => import('./guandan/GuandanBoard')),
     tint: ['#3f6f8f', '#22415a'],

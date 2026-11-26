@@ -1,0 +1,136 @@
+.black-ace {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(52px, 1fr) auto auto;
+  gap: 10px;
+  padding: 4px clamp(12px, 3vw, 44px) 10px;
+  overflow-y: auto;
+}
+.black-ace__info {
+  justify-content: center;
+}
+.black-ace__opponents {
+  display: grid;
+  grid-template-columns: repeat(var(--players), minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 12px;
+}
+.black-ace__opponent {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+}
+.black-ace .seat__sub {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.black-ace .seat__sub em {
+  color: var(--felt-ink-2);
+  font-style: normal;
+}
+.black-ace__last {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--felt-ink-2);
+  font-size: 11px;
+}
+.black-ace__center,
+.black-ace__target,
+.black-ace__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--felt-ink-2);
+}
+.black-ace__target {
+  max-width: 100%;
+}
+.black-ace__target .cardrow {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 4px;
+}
+.black-ace__target > span {
+  font-size: 12px;
+  color: var(--felt-accent);
+}
+.black-ace__empty b {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 6vh, 66px);
+  color: var(--felt-ink-3);
+  letter-spacing: -0.08em;
+}
+.black-ace__empty small {
+  text-align: center;
+}
+.black-ace__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+}
+.black-ace__waiting {
+  font-size: 12px;
+  color: var(--felt-ink-2);
+  text-align: right;
+}
+.black-ace__hand {
+  min-width: 0;
+  text-align: center;
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .black-ace__opponents {
+    grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+    row-gap: 12px;
+  }
+  .black-ace__controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .black-ace__controls > .seat {
+    margin-right: auto;
+  }
+  .black-ace__controls .action-bar {
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (max-height: 500px) {
+  .black-ace {
+    gap: 3px;
+    padding-bottom: 4px;
+    --cw: 40px;
+    --cw-sm: 30px;
+  }
+  .black-ace__opponents {
+    padding-top: 7px;
+  }
+  .black-ace__opponent {
+    gap: 2px;
+  }
+  .black-ace__center,
+  .black-ace__target,
+  .black-ace__empty {
+    gap: 3px;
+  }
+  .black-ace__empty b {
+    display: none;
+  }
+  .black-ace__controls {
+    min-height: 36px;
+  }
+  .black-ace .btn--md {
+    height: 32px;
+    padding: 0 16px;
+  }
+}

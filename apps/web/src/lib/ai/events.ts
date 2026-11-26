@@ -35,7 +35,7 @@ export const aiSpeech = {
     };
   },
   say(seat: number, text: string) {
-    if (aiSettings.get().readAloud) speak(text, { interrupt: false });
+    if (aiSettings.get().readAloud) speak(text, { interrupt: false, channel: 'ai' });
     const at = Date.now();
     speech = { ...speech, [seat]: { text, at } };
     speechListeners.forEach((l) => l());

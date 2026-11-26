@@ -22,6 +22,7 @@ function nativeTts(): CapBridge | null {
 let nativeVoices: SpeechVoice[] | null = null;
 let loading: Promise<SpeechVoice[]> | null = null;
 let generation = 0;
+let aiToken: number | null = null;
 
 function chineseVoices(voices: SpeechSynthesisVoice[]): SpeechVoice[] {
   return voices
@@ -63,6 +64,7 @@ export async function loadSpeechVoices(): Promise<SpeechVoice[]> {
 
 export function stopSpeech(): void {
   generation++;
+  aiToken = null;
   try {
     const cap = nativeTts();
     if (cap) void cap.nativePromise!('TextToSpeech', 'stop', {}).catch(() => {});
@@ -76,10 +78,20 @@ export function stopSpeech(): void {
  * 用系统语音报牌（跟随「音效」开关；不支持时静默）。
  * Android App 的 WebView 没有 speechSynthesis，改用原生 TextToSpeech 插件。
  */
-export function speak(text: string, opts: { interrupt?: boolean; preview?: boolean } = {}) {
+export function speak(
+  text: string,
+  opts: { interrupt?: boolean; preview?: boolean; channel?: 'ai' } = {},
+) {
   const s = settings.get();
   if (!text || (!opts.preview && (!s.sound || !s.speech))) return;
+  if (opts.preview) stopSpeech();
+  // AI 发言比报牌长，期间不插播报牌或堆积下一句；文字气泡照常更新。
+  if (aiToken !== null) return;
   const token = opts.interrupt === false ? generation : ++generation;
+  if (opts.channel === 'ai') aiToken = token;
+  const done = () => {
+    if (opts.channel === 'ai' && aiToken === token) aiToken = null;
+  };
   const rate = Number.isFinite(s.speechRate) ? Math.max(0.75, Math.min(1.5, s.speechRate)) : 1.05;
   const pick = (voices: SpeechVoice[]) => voices.find((v) => v.id === s.speechVoice) ?? voices[0];
   try {
@@ -97,10 +109,14 @@ export function speak(text: string, opts: { interrupt?: boolean; preview?: boole
             queueStrategy: opts.interrupt === false ? 1 : 0,
           });
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(done);
       return;
     }
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      done();
+      return;
+    }
     const synth = window.speechSynthesis;
     const voices = synth.getVoices();
     const voice = pick(chineseVoices(voices));
@@ -109,8 +125,11 @@ export function speak(text: string, opts: { interrupt?: boolean; preview?: boole
     u.lang = voice?.lang ?? 'zh-CN';
     u.rate = rate;
     if (voice) u.voice = voices[voice.index];
+    u.onend = done;
+    u.onerror = done;
     synth.speak(u);
   } catch {
+    done();
     // 语音不可用时静默
   }
 }

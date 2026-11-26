@@ -104,4 +104,42 @@ describe('中文报牌语音', () => {
     await new Promise((done) => setTimeout(done, 0));
     expect(bridge.mock.calls.some((call) => call[1] === 'speak')).toBe(false);
   });
+
+  it('AI 朗读期间不被后续报牌打断，也不堆积新的 AI 语音', async () => {
+    const speech = await import('../src/lib/speech');
+    speech.speak('看我的这一手', { channel: 'ai', interrupt: false });
+    const utterance = synth.speak.mock.calls[0][0];
+    speech.speak('对六');
+    speech.speak('另一句话', { channel: 'ai', interrupt: false });
+    expect(synth.speak).toHaveBeenCalledTimes(1);
+    expect(synth.cancel).not.toHaveBeenCalled();
+    utterance.onend();
+    speech.speak('顺子');
+    expect(synth.speak).toHaveBeenCalledTimes(2);
+  });
+
+  it('原生 AI 朗读结束或被主动停止后恢复报牌', async () => {
+    let done!: () => void;
+    const bridge = vi.fn(async (_plugin: string, method: string) => {
+      if (method === 'getSupportedVoices') return { voices };
+      if (method === 'speak')
+        return new Promise<void>((resolve) => {
+          done = resolve;
+        });
+    });
+    vi.stubGlobal('Capacitor', { isPluginAvailable: () => true, nativePromise: bridge });
+    const speech = await import('../src/lib/speech');
+    speech.speak('这手有意思', { channel: 'ai', interrupt: false });
+    await vi.waitFor(() => expect(bridge.mock.calls.some((c) => c[1] === 'speak')).toBe(true));
+    speech.speak('对六');
+    await Promise.resolve();
+    expect(bridge.mock.calls.filter((c) => c[1] === 'speak')).toHaveLength(1);
+    done();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    speech.speak('顺子');
+    await vi.waitFor(() =>
+      expect(bridge.mock.calls.filter((c) => c[1] === 'speak')).toHaveLength(2),
+    );
+    speech.stopSpeech();
+  });
 });

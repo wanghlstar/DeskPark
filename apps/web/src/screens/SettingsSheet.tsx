@@ -276,7 +276,7 @@ function SpeechSection() {
     <div className="field field--stack ai-settings">
       <div className="ai-row">
         <span>
-          报牌语音<small>音色使用当前设备的中文语音，优先本地普通话</small>
+          语音播报<small>报牌与 AI 朗读的总开关；优先本地普通话</small>
         </span>
         <Switch
           checked={s.speech}

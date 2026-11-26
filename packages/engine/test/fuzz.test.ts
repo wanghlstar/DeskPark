@@ -14,6 +14,7 @@ import {
   onecard,
   pinghu,
   paodekuai,
+  zhuoheia,
   reversi,
   shuangsheng,
   sichuan,
@@ -166,6 +167,10 @@ describe('畸形动作模糊测试（模拟恶意联机客户端）', () => {
   it('黑白棋', () => {
     for (let seed = 1; seed <= 4; seed++)
       fuzz(reversi, 2, { level: 1, side: 'random' }, ['place', 'undo', 'resign'], seed);
+  });
+  it('捉黑 A', () => {
+    for (let seed = 1; seed <= 8; seed++)
+      fuzz(zhuoheia, 3 + (seed % 6), { rounds: 1 }, ['play', 'pass', 'ready'], seed);
   });
   it('斗地主', () => {
     for (let seed = 1; seed <= 15; seed++)

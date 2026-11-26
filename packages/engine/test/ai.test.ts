@@ -15,6 +15,7 @@ import {
   onecard,
   pinghu,
   paodekuai,
+  zhuoheia,
   reversi,
   shuangsheng,
   sichuan,
@@ -81,6 +82,10 @@ describe('大模型接管：候选动作', () => {
   it('黑白棋', () => {
     for (let seed = 1; seed <= 3; seed++)
       expect(checkPrompts(reversi, 2, { level: 1, side: 'random' }, seed, 61)).toBeGreaterThan(10);
+  });
+  it('捉黑 A', () => {
+    for (let seed = 1; seed <= 4; seed++)
+      expect(checkPrompts(zhuoheia, 3 + seed, { rounds: 1 }, seed, 600)).toBeGreaterThan(5);
   });
   it('斗地主', () => {
     for (let seed = 1; seed <= 6; seed++)
