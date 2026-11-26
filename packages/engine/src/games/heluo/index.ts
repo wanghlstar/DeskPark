@@ -341,7 +341,7 @@ function finishWin(
     hands: s.players.map((p) => [...p.hand]),
   };
   s.history.push({ round: s.round, deltas, win: kind });
-  s.phase = 'roundOver';
+  s.phase = s.options.rounds > 0 && s.round >= s.options.rounds ? 'matchOver' : 'roundOver';
   s.window = null;
   pushEvent(s, {
     type: kind === 'dianpao' ? 'hu' : kind === 'pici' ? 'pici' : kind === 'zimo' ? 'zimo' : 'ci',
@@ -363,7 +363,7 @@ function wallOver(s: HlState) {
     hands: s.players.map((p) => [...p.hand]),
   };
   s.history.push({ round: s.round, deltas: [0, 0, 0, 0], win: null });
-  s.phase = 'roundOver';
+  s.phase = s.options.rounds > 0 && s.round >= s.options.rounds ? 'matchOver' : 'roundOver';
   s.window = null;
 }
 

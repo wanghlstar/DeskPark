@@ -80,7 +80,7 @@ describe('普通麻将 · 136 张基础规则', () => {
     const s = base(['123m456s789p111z22z']);
     expect(hl.legalOf(s, 0).hu).toBe(true);
     const next = act(s, 0, { type: 'hu' });
-    expect(next.phase).toBe('roundOver');
+    expect(next.phase).toBe('matchOver');
     expect(next.result?.win?.kind).toBe('zimo');
     expect(next.scores).toEqual([3, -1, -1, -1]);
     expect(next.result?.nextDealer).toBe(0);
@@ -101,6 +101,7 @@ describe('普通麻将 · 136 张基础规则', () => {
     s = act(s, 0, { type: 'discard', tile: s.players[0].hand[0].id });
     expect(hl.legalOf(s, 1).hu).toBe(true);
     s = claims(s, { 1: { type: 'hu' } });
+    expect(s.phase).toBe('matchOver');
     expect(s.result?.win).toMatchObject({ seat: 1, from: 0, kind: 'dianpao' });
     expect(s.scores).toEqual([-1, 1, 0, 0]);
   });

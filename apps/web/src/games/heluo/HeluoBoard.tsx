@@ -661,24 +661,28 @@ function RoundResult({
       dismissible={false}
       wide
       footer={
-        matchOver ? (
-          <>
-            <Button onClick={() => ctl.leave()}>返回大厅</Button>
-            {ctl.canRestart && (
+        <>
+          <Button onClick={() => ctl.leave()}>返回大厅</Button>
+          {matchOver ? (
+            ctl.canRestart && (
               <Button variant="primary" onClick={() => ctl.restart()}>
                 再来一场
               </Button>
-            )}
-          </>
-        ) : spectator ? undefined : (
-          <Button
-            variant="primary"
-            disabled={v.ready[me]}
-            onClick={() => ctl.act({ type: 'ready' })}
-          >
-            {v.ready[me] ? `等待其他玩家 ${readyCount}/4` : '继续下一盘'}
-          </Button>
-        )
+            )
+          ) : spectator ? null : (
+            <Button
+              variant="primary"
+              disabled={v.ready[me]}
+              onClick={() => ctl.act({ type: 'ready' })}
+            >
+              {v.ready[me]
+                ? `等待其他玩家 ${readyCount}/4`
+                : v.options.rounds > 0 && v.round >= v.options.rounds
+                  ? '查看总分'
+                  : '继续下一盘'}
+            </Button>
+          )}
+        </>
       }
     >
       <div className="result">
